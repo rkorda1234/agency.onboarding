@@ -1,0 +1,867 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Client Onboarding — Your Agency</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --navy: #0d1b2a;
+    --blue: #165f8c;
+    --coral: #FF6B6B;
+    --cream: #f9f7f4;
+    --muted: #8a8a8a;
+    --border: rgba(0,0,0,0.10);
+    --serif: 'DM Serif Display', Georgia, serif;
+    --sans: 'DM Sans', system-ui, sans-serif;
+    --radius: 12px;
+    --transition: 0.2s cubic-bezier(0.4,0,0.2,1);
+  }
+
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: var(--sans);
+    background: var(--cream);
+    color: var(--navy);
+    min-height: 100vh;
+    font-weight: 300;
+    line-height: 1.6;
+  }
+
+  /* Layout */
+  .page { display: grid; grid-template-columns: 340px 1fr; min-height: 100vh; }
+
+  /* Sidebar */
+  .sidebar {
+    background: var(--navy);
+    color: #fff;
+    padding: 3rem 2.5rem;
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .sidebar-logo {
+    font-family: var(--serif);
+    font-size: 1.4rem;
+    color: #fff;
+    margin-bottom: 3rem;
+    letter-spacing: -0.01em;
+  }
+
+  .sidebar-logo span { color: var(--coral); }
+
+  .sidebar-headline {
+    font-family: var(--serif);
+    font-size: 2rem;
+    line-height: 1.2;
+    margin-bottom: 1.25rem;
+    font-weight: 400;
+  }
+
+  .sidebar-sub {
+    font-size: 0.875rem;
+    color: rgba(255,255,255,0.55);
+    line-height: 1.7;
+    margin-bottom: 3rem;
+  }
+
+  .progress-list { list-style: none; flex: 1; }
+  .progress-list li {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 0;
+    font-size: 0.8125rem;
+    color: rgba(255,255,255,0.35);
+    border-bottom: 0.5px solid rgba(255,255,255,0.06);
+    transition: color var(--transition);
+  }
+  .progress-list li.active { color: #fff; }
+  .progress-list li.done { color: rgba(255,255,255,0.5); }
+  .step-dot {
+    width: 20px; height: 20px;
+    border-radius: 50%;
+    border: 1px solid rgba(255,255,255,0.15);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 9px;
+    flex-shrink: 0;
+    transition: all var(--transition);
+  }
+  .progress-list li.active .step-dot {
+    background: var(--coral);
+    border-color: var(--coral);
+    color: #fff;
+  }
+  .progress-list li.done .step-dot {
+    background: rgba(255,255,255,0.15);
+    border-color: transparent;
+    color: rgba(255,255,255,0.6);
+  }
+
+  .sidebar-footer {
+    font-size: 0.75rem;
+    color: rgba(255,255,255,0.2);
+    margin-top: 2rem;
+  }
+
+  /* Main form area */
+  .main {
+    padding: 3.5rem 4rem;
+    max-width: 720px;
+  }
+
+  .section { display: none; }
+  .section.active { display: block; animation: fadeUp 0.35s ease both; }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(14px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .section-eyebrow {
+    font-size: 0.6875rem;
+    font-weight: 500;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--coral);
+    margin-bottom: 0.5rem;
+  }
+
+  .section-title {
+    font-family: var(--serif);
+    font-size: 2.25rem;
+    font-weight: 400;
+    line-height: 1.15;
+    margin-bottom: 0.75rem;
+    letter-spacing: -0.02em;
+  }
+
+  .section-desc {
+    font-size: 0.9rem;
+    color: var(--muted);
+    margin-bottom: 2.5rem;
+    max-width: 480px;
+  }
+
+  /* Fields */
+  .field { margin-bottom: 1.5rem; }
+  .field label {
+    display: block;
+    font-size: 0.8125rem;
+    font-weight: 500;
+    color: var(--navy);
+    margin-bottom: 6px;
+    letter-spacing: 0.01em;
+  }
+  .field .optional {
+    font-weight: 300;
+    color: var(--muted);
+    font-size: 0.75rem;
+    margin-left: 4px;
+  }
+
+  input[type=text], input[type=url], input[type=email], textarea, select {
+    width: 100%;
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 12px 14px;
+    font-family: var(--sans);
+    font-size: 0.9rem;
+    font-weight: 300;
+    color: var(--navy);
+    transition: border-color var(--transition), box-shadow var(--transition);
+    outline: none;
+    appearance: none;
+  }
+  input:focus, textarea:focus, select:focus {
+    border-color: var(--blue);
+    box-shadow: 0 0 0 3px rgba(22,95,140,0.08);
+  }
+  textarea { min-height: 90px; resize: vertical; }
+  ::placeholder { color: #bbb; font-weight: 300; }
+
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+
+  /* Tag pills */
+  .tags { display: flex; gap: 8px; flex-wrap: wrap; }
+  .tag {
+    padding: 7px 14px;
+    border-radius: 100px;
+    border: 1px solid var(--border);
+    font-size: 0.8125rem;
+    font-weight: 400;
+    color: var(--muted);
+    cursor: pointer;
+    background: #fff;
+    transition: all var(--transition);
+    user-select: none;
+  }
+  .tag:hover { border-color: var(--blue); color: var(--navy); }
+  .tag.selected {
+    background: var(--navy);
+    border-color: var(--navy);
+    color: #fff;
+  }
+
+  /* Radio pills */
+  .radio-group { display: flex; gap: 8px; flex-wrap: wrap; }
+  .radio-pill {
+    padding: 7px 16px;
+    border-radius: 100px;
+    border: 1px solid var(--border);
+    font-size: 0.8125rem;
+    color: var(--muted);
+    cursor: pointer;
+    background: #fff;
+    transition: all var(--transition);
+    user-select: none;
+  }
+  .radio-pill:hover { border-color: var(--blue); color: var(--navy); }
+  .radio-pill.selected {
+    background: var(--navy);
+    border-color: var(--navy);
+    color: #fff;
+  }
+
+  /* Aesthetic cards */
+  .aesthetic-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    margin-top: 4px;
+  }
+  .aesthetic-card {
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px;
+    cursor: pointer;
+    background: #fff;
+    transition: all var(--transition);
+  }
+  .aesthetic-card:hover { border-color: var(--navy); }
+  .aesthetic-card.selected {
+    border-color: var(--navy);
+    box-shadow: inset 0 0 0 1px var(--navy);
+  }
+  .aesthetic-swatch { height: 32px; border-radius: 6px; margin-bottom: 8px; }
+  .aesthetic-name { font-size: 0.75rem; font-weight: 500; color: var(--navy); }
+  .aesthetic-sub { font-size: 0.6875rem; color: var(--muted); margin-top: 2px; line-height: 1.3; }
+
+  /* Color swatches */
+  .color-row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+  .swatch {
+    width: 30px; height: 30px;
+    border-radius: 50%;
+    cursor: pointer;
+    border: 2px solid transparent;
+    transition: transform var(--transition), border-color var(--transition);
+  }
+  .swatch:hover { transform: scale(1.12); }
+  .swatch.selected { border-color: var(--navy); }
+  .color-custom { display: flex; align-items: center; gap: 8px; }
+  .color-preview { width: 30px; height: 30px; border-radius: 50%; border: 1px solid var(--border); }
+  input[type=color] {
+    width: 64px; height: 30px;
+    padding: 0 2px;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    cursor: pointer;
+  }
+
+  /* Navigation buttons */
+  .nav { display: flex; align-items: center; gap: 12px; margin-top: 2.5rem; }
+  .btn-back {
+    padding: 12px 22px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: transparent;
+    font-family: var(--sans);
+    font-size: 0.875rem;
+    font-weight: 400;
+    color: var(--muted);
+    cursor: pointer;
+    transition: all var(--transition);
+  }
+  .btn-back:hover { border-color: var(--navy); color: var(--navy); }
+  .btn-next {
+    padding: 12px 28px;
+    border-radius: 8px;
+    border: none;
+    background: var(--navy);
+    font-family: var(--sans);
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: #fff;
+    cursor: pointer;
+    transition: all var(--transition);
+    display: flex; align-items: center; gap: 8px;
+  }
+  .btn-next:hover { background: var(--blue); }
+  .btn-next:disabled { opacity: 0.4; cursor: not-allowed; }
+  .btn-next .arrow { font-size: 1rem; transition: transform var(--transition); }
+  .btn-next:hover .arrow { transform: translateX(3px); }
+
+  /* Review section */
+  .review-grid { display: grid; gap: 1px; background: var(--border); border-radius: var(--radius); overflow: hidden; border: 1px solid var(--border); }
+  .review-row { display: grid; grid-template-columns: 160px 1fr; background: #fff; }
+  .review-key { padding: 12px 16px; font-size: 0.75rem; font-weight: 500; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); background: #fafafa; }
+  .review-val { padding: 12px 16px; font-size: 0.875rem; color: var(--navy); }
+  .color-dot { display: inline-block; width: 12px; height: 12px; border-radius: 50%; margin-right: 4px; vertical-align: middle; border: 1px solid rgba(0,0,0,0.1); }
+
+  /* Pipeline */
+  .pipeline { margin-top: 1.5rem; border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+  .pipe-header { padding: 10px 16px; background: #fafafa; font-size: 0.75rem; font-weight: 500; text-transform: uppercase; letter-spacing: 0.06em; color: var(--muted); border-bottom: 1px solid var(--border); }
+  .pipe-item { display: flex; align-items: center; gap: 12px; padding: 11px 16px; font-size: 0.8375rem; border-bottom: 1px solid var(--border); background: #fff; }
+  .pipe-item:last-child { border-bottom: none; }
+  .pipe-icon { font-size: 1rem; width: 28px; text-align: center; }
+  .pipe-label { font-weight: 500; color: var(--navy); }
+  .pipe-sub { font-size: 0.75rem; color: var(--muted); margin-top: 1px; }
+
+  /* Launching state */
+  .launch-screen {
+    text-align: center;
+    padding: 4rem 2rem;
+  }
+  .launch-spinner {
+    width: 48px; height: 48px;
+    border: 2px solid rgba(22,95,140,0.15);
+    border-top-color: var(--blue);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin: 0 auto 1.5rem;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .launch-title { font-family: var(--serif); font-size: 1.75rem; margin-bottom: 0.5rem; }
+  .launch-sub { font-size: 0.875rem; color: var(--muted); max-width: 340px; margin: 0 auto 2rem; }
+  .log-list { text-align: left; max-width: 400px; margin: 0 auto; }
+  .log-item {
+    display: flex; align-items: center; gap: 10px;
+    padding: 8px 0;
+    font-size: 0.8375rem;
+    border-bottom: 1px solid var(--border);
+    color: var(--muted);
+    transition: color var(--transition);
+  }
+  .log-item.done { color: var(--navy); }
+  .log-item.running { color: var(--blue); }
+  .log-item.error { color: var(--coral); }
+  .log-dot { width: 8px; height: 8px; border-radius: 50%; background: currentColor; flex-shrink: 0; }
+  .log-item.running .log-dot { animation: pulse 1s ease-in-out infinite; }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+  /* Success */
+  .success-screen { text-align: center; padding: 4rem 2rem; display: none; }
+  .success-icon { font-size: 3rem; margin-bottom: 1.5rem; }
+  .success-title { font-family: var(--serif); font-size: 2rem; margin-bottom: 0.75rem; }
+  .success-sub { font-size: 0.9rem; color: var(--muted); max-width: 380px; margin: 0 auto; line-height: 1.7; }
+
+  /* Responsive */
+  @media (max-width: 900px) {
+    .page { grid-template-columns: 1fr; }
+    .sidebar { position: static; height: auto; padding: 2rem; }
+    .progress-list { display: none; }
+    .main { padding: 2rem 1.5rem; max-width: 100%; }
+    .aesthetic-grid { grid-template-columns: repeat(2, 1fr); }
+    .two-col { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<div class="page">
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">Agency<span>.</span></div>
+    <div class="sidebar-headline">Let's build your brand presence.</div>
+    <p class="sidebar-sub">This takes about 5 minutes. Your answers go directly into our content pipeline — no middlemen, no delays.</p>
+    <ul class="progress-list" id="progressList">
+      <li class="active" data-step="0"><div class="step-dot">1</div> Client info</li>
+      <li data-step="1"><div class="step-dot">2</div> Brand voice</li>
+      <li data-step="2"><div class="step-dot">3</div> Goals & platforms</li>
+      <li data-step="3"><div class="step-dot">4</div> Visual identity</li>
+      <li data-step="4"><div class="step-dot">5</div> Content direction</li>
+      <li data-step="5"><div class="step-dot">6</div> Review & launch</li>
+    </ul>
+    <div class="sidebar-footer">Powered by Claude AI &middot; Secured</div>
+  </aside>
+
+  <!-- Main -->
+  <main class="main">
+
+    <!-- Step 0: Client Info -->
+    <div class="section active" id="step-0">
+      <div class="section-eyebrow">Step 1 of 6</div>
+      <h1 class="section-title">Tell us about your business.</h1>
+      <p class="section-desc">Basic information so we can set up your workspace and brand assets correctly.</p>
+
+      <div class="two-col">
+        <div class="field"><label>Brand / business name</label><input type="text" id="clientName" placeholder="e.g. Bloom Studio" /></div>
+        <div class="field"><label>Industry</label><input type="text" id="industry" placeholder="e.g. Real estate, Fashion…" /></div>
+      </div>
+      <div class="two-col">
+        <div class="field"><label>Website <span class="optional">optional</span></label><input type="url" id="website" placeholder="https://..." /></div>
+        <div class="field"><label>Instagram handle <span class="optional">optional</span></label><input type="text" id="handle" placeholder="@yourhandle" /></div>
+      </div>
+      <div class="field"><label>Existing logo <span class="optional">optional — paste a link or describe it</span></label><input type="text" id="logo" placeholder="Google Drive link, or 'blue wordmark, no icon'" /></div>
+      <div class="field"><label>Existing brand assets <span class="optional">optional</span></label><input type="text" id="assets" placeholder="Link to Drive, Dropbox, or describe what you have" /></div>
+
+      <div class="nav">
+        <button class="btn-next" onclick="next(0)">Continue <span class="arrow">→</span></button>
+      </div>
+    </div>
+
+    <!-- Step 1: Brand Voice -->
+    <div class="section" id="step-1">
+      <div class="section-eyebrow">Step 2 of 6</div>
+      <h1 class="section-title">How does your brand speak?</h1>
+      <p class="section-desc">We use this to write copy that sounds unmistakably like you — not like a template.</p>
+
+      <div class="field"><label>Describe your brand in 3 words</label><input type="text" id="brandWords" placeholder="e.g. Bold, Innovative, Warm" /></div>
+      <div class="field"><label>Target audience</label><textarea id="audience" placeholder="Age, location, lifestyle, profession — the more specific, the better."></textarea></div>
+      <div class="field">
+        <label>Tone of voice <span class="optional">select all that apply</span></label>
+        <div class="tags" id="toneTags">
+          <span class="tag" onclick="toggleTag(this)">Professional</span>
+          <span class="tag" onclick="toggleTag(this)">Playful</span>
+          <span class="tag" onclick="toggleTag(this)">Inspirational</span>
+          <span class="tag" onclick="toggleTag(this)">Edgy</span>
+          <span class="tag" onclick="toggleTag(this)">Minimal</span>
+          <span class="tag" onclick="toggleTag(this)">Luxurious</span>
+          <span class="tag" onclick="toggleTag(this)">Warm</span>
+          <span class="tag" onclick="toggleTag(this)">Educational</span>
+          <span class="tag" onclick="toggleTag(this)">Bold</span>
+          <span class="tag" onclick="toggleTag(this)">Conversational</span>
+        </div>
+      </div>
+      <div class="field">
+        <label>Content language</label>
+        <div class="radio-group" id="langGroup">
+          <div class="radio-pill" onclick="selectRadio('langGroup', this)">English only</div>
+          <div class="radio-pill" onclick="selectRadio('langGroup', this)">Spanish only</div>
+          <div class="radio-pill" onclick="selectRadio('langGroup', this)">Bilingual (EN + ES)</div>
+          <div class="radio-pill" onclick="selectRadio('langGroup', this)">Other</div>
+        </div>
+      </div>
+
+      <div class="nav">
+        <button class="btn-back" onclick="back(1)">← Back</button>
+        <button class="btn-next" onclick="next(1)">Continue <span class="arrow">→</span></button>
+      </div>
+    </div>
+
+    <!-- Step 2: Goals & Platforms -->
+    <div class="section" id="step-2">
+      <div class="section-eyebrow">Step 3 of 6</div>
+      <h1 class="section-title">What do you want to achieve?</h1>
+      <p class="section-desc">Your goals shape which content pillars we build and which platforms we prioritize.</p>
+
+      <div class="field">
+        <label>Main goals <span class="optional">select all that apply</span></label>
+        <div class="tags" id="goalTags">
+          <span class="tag" onclick="toggleTag(this)">Brand awareness</span>
+          <span class="tag" onclick="toggleTag(this)">Lead generation</span>
+          <span class="tag" onclick="toggleTag(this)">Agent / talent recruiting</span>
+          <span class="tag" onclick="toggleTag(this)">Listing promotion</span>
+          <span class="tag" onclick="toggleTag(this)">Community building</span>
+          <span class="tag" onclick="toggleTag(this)">Education & thought leadership</span>
+        </div>
+      </div>
+      <div class="field">
+        <label>Platforms <span class="optional">select all that apply</span></label>
+        <div class="tags" id="platformTags">
+          <span class="tag" onclick="toggleTag(this)">Instagram</span>
+          <span class="tag" onclick="toggleTag(this)">Facebook</span>
+          <span class="tag" onclick="toggleTag(this)">LinkedIn</span>
+          <span class="tag" onclick="toggleTag(this)">TikTok</span>
+          <span class="tag" onclick="toggleTag(this)">X / Twitter</span>
+          <span class="tag" onclick="toggleTag(this)">YouTube</span>
+          <span class="tag" onclick="toggleTag(this)">Pinterest</span>
+        </div>
+      </div>
+
+      <div class="nav">
+        <button class="btn-back" onclick="back(2)">← Back</button>
+        <button class="btn-next" onclick="next(2)">Continue <span class="arrow">→</span></button>
+      </div>
+    </div>
+
+    <!-- Step 3: Visual Identity -->
+    <div class="section" id="step-3">
+      <div class="section-eyebrow">Step 4 of 6</div>
+      <h1 class="section-title">What should your brand look like?</h1>
+      <p class="section-desc">Pick an aesthetic direction and your colors. We'll use this to generate your moodboard, brand guide, and first posts.</p>
+
+      <div class="field">
+        <label>Design aesthetic</label>
+        <div class="aesthetic-grid" id="aestheticGrid">
+          <div class="aesthetic-card" onclick="selectAesthetic(this,'Editorial / Luxury')">
+            <div class="aesthetic-swatch" style="background:linear-gradient(135deg,#111 55%,#f5f5f5 55%)"></div>
+            <div class="aesthetic-name">Editorial / Luxury</div>
+            <div class="aesthetic-sub">Compass-style. Minimal, white space, large type.</div>
+          </div>
+          <div class="aesthetic-card" onclick="selectAesthetic(this,'Bold & Energetic')">
+            <div class="aesthetic-swatch" style="background:linear-gradient(135deg,#FF6B6B 50%,#FECA57 50%)"></div>
+            <div class="aesthetic-name">Bold & Energetic</div>
+            <div class="aesthetic-sub">Vibrant colors, high contrast, loud.</div>
+          </div>
+          <div class="aesthetic-card" onclick="selectAesthetic(this,'Clean & Corporate')">
+            <div class="aesthetic-swatch" style="background:linear-gradient(135deg,#165f8c 50%,#f5f5f5 50%)"></div>
+            <div class="aesthetic-name">Clean & Corporate</div>
+            <div class="aesthetic-sub">Structured, trustworthy, Zillow-style.</div>
+          </div>
+          <div class="aesthetic-card" onclick="selectAesthetic(this,'Warm & Organic')">
+            <div class="aesthetic-swatch" style="background:linear-gradient(135deg,#c8956c 50%,#f0e6d3 50%)"></div>
+            <div class="aesthetic-name">Warm & Organic</div>
+            <div class="aesthetic-sub">Earthy tones, handcrafted, approachable.</div>
+          </div>
+          <div class="aesthetic-card" onclick="selectAesthetic(this,'Dark & Premium')">
+            <div class="aesthetic-swatch" style="background:linear-gradient(135deg,#1a1a2e 50%,#c9a84c 50%)"></div>
+            <div class="aesthetic-name">Dark & Premium</div>
+            <div class="aesthetic-sub">Dark mode, gold accents, ultra high-end.</div>
+          </div>
+          <div class="aesthetic-card" onclick="selectAesthetic(this,'Playful & Creative')">
+            <div class="aesthetic-swatch" style="background:linear-gradient(135deg,#5F27CD 40%,#48DBFB 40%,#48DBFB 70%,#FF9F43 70%)"></div>
+            <div class="aesthetic-name">Playful & Creative</div>
+            <div class="aesthetic-sub">Fun, expressive, social-native.</div>
+          </div>
+        </div>
+        <div class="field" style="margin-top:12px;margin-bottom:0">
+          <input type="text" id="aestheticCustom" placeholder='Or describe your own — e.g. "Like Compass but warmer, with more personality"' />
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Brand colors <span class="optional">pick up to 3, or add your own</span></label>
+        <div class="color-row" id="colorRow">
+          <div class="swatch" style="background:#FF6B6B" onclick="toggleSwatch(this,'#FF6B6B')"></div>
+          <div class="swatch" style="background:#FF9F43" onclick="toggleSwatch(this,'#FF9F43')"></div>
+          <div class="swatch" style="background:#FECA57" onclick="toggleSwatch(this,'#FECA57')"></div>
+          <div class="swatch" style="background:#1DD1A1" onclick="toggleSwatch(this,'#1DD1A1')"></div>
+          <div class="swatch" style="background:#48DBFB" onclick="toggleSwatch(this,'#48DBFB')"></div>
+          <div class="swatch" style="background:#165f8c" onclick="toggleSwatch(this,'#165f8c')"></div>
+          <div class="swatch" style="background:#5F27CD" onclick="toggleSwatch(this,'#5F27CD')"></div>
+          <div class="swatch" style="background:#222f3e" onclick="toggleSwatch(this,'#222f3e')"></div>
+          <div class="swatch" style="background:#f5f5f5;border:1px solid #ddd" onclick="toggleSwatch(this,'#f5f5f5')"></div>
+          <div class="color-custom">
+            <div class="color-preview" id="customPreview" style="background:#cccccc"></div>
+            <input type="color" id="customColor" oninput="document.getElementById('customPreview').style.background=this.value" />
+          </div>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Font style preference <span class="optional">select all that apply</span></label>
+        <div class="tags">
+          <span class="tag" onclick="toggleTag(this)">Serif — elegant, editorial</span>
+          <span class="tag" onclick="toggleTag(this)">Sans-serif — clean, modern</span>
+          <span class="tag" onclick="toggleTag(this)">Script — handwritten, personal</span>
+          <span class="tag" onclick="toggleTag(this)">Bold display — loud, impactful</span>
+          <span class="tag" onclick="toggleTag(this)">Mixed — varied, layered</span>
+        </div>
+      </div>
+
+      <div class="nav">
+        <button class="btn-back" onclick="back(3)">← Back</button>
+        <button class="btn-next" onclick="next(3)">Continue <span class="arrow">→</span></button>
+      </div>
+    </div>
+
+    <!-- Step 4: Content Direction -->
+    <div class="section" id="step-4">
+      <div class="section-eyebrow">Step 5 of 6</div>
+      <h1 class="section-title">What's your story?</h1>
+      <p class="section-desc">The more you share here, the better the content. Don't hold back.</p>
+
+      <div class="field"><label>What do you want to promote on social media?</label><textarea id="promote" style="min-height:110px" placeholder="Tell us about your products, services, unique selling points, what makes you different…"></textarea></div>
+      <div class="field"><label>Competitors or brands you admire <span class="optional">optional</span></label><input type="text" id="competitors" placeholder="e.g. @compass, @apple — accounts whose look and feel inspires you" /></div>
+      <div class="field"><label>Do's, don'ts, or compliance requirements <span class="optional">optional</span></label><textarea id="donts" style="min-height:70px" placeholder="e.g. NAR advertising rules, no stock photos, always use real people, Fair Housing disclosures required…"></textarea></div>
+      <div class="field"><label>Existing content or assets to reference <span class="optional">optional</span></label><input type="text" id="existingAssets" placeholder="Google Drive or Dropbox link to photos, past posts, brand materials…" /></div>
+
+      <div class="nav">
+        <button class="btn-back" onclick="back(4)">← Back</button>
+        <button class="btn-next" onclick="next(4)">Review brief <span class="arrow">→</span></button>
+      </div>
+    </div>
+
+    <!-- Step 5: Review -->
+    <div class="section" id="step-5">
+      <div class="section-eyebrow">Step 6 of 6</div>
+      <h1 class="section-title">Looks good?</h1>
+      <p class="section-desc">Review your brief below, then launch. We'll create your Slack workspace, brand guide, and first content assets automatically.</p>
+
+      <div class="review-grid" id="reviewGrid"></div>
+
+      <div class="pipeline">
+        <div class="pipe-header">What we'll create</div>
+        <div class="pipe-item"><div class="pipe-icon">💬</div><div><div class="pipe-label">Slack channel</div><div class="pipe-sub" id="pipeChannel">Your dedicated brand workspace</div></div></div>
+        <div class="pipe-item"><div class="pipe-icon">📋</div><div><div class="pipe-label">Brand canvas</div><div class="pipe-sub">Tone, pillars, palette, Meta onboarding checklist</div></div></div>
+        <div class="pipe-item"><div class="pipe-icon">🎨</div><div><div class="pipe-label">Canva moodboard</div><div class="pipe-sub" id="pipeAesthetic">Tailored to your aesthetic</div></div></div>
+        <div class="pipe-item"><div class="pipe-icon">📐</div><div><div class="pipe-label">Brand guide</div><div class="pipe-sub">Colors, fonts, tone — editable in Canva</div></div></div>
+        <div class="pipe-item"><div class="pipe-icon">📸</div><div><div class="pipe-label">3 sample posts</div><div class="pipe-sub" id="pipePlatforms">Designed for your platforms</div></div></div>
+        <div class="pipe-item"><div class="pipe-icon">📣</div><div><div class="pipe-label">Meta onboarding steps</div><div class="pipe-sub">Posted in your Slack channel</div></div></div>
+      </div>
+
+      <div class="nav">
+        <button class="btn-back" onclick="back(5)">← Edit</button>
+        <button class="btn-next" onclick="submitBrief()" id="launchBtn">Launch onboarding <span class="arrow">→</span></button>
+      </div>
+    </div>
+
+    <!-- Launching -->
+    <div class="section" id="step-launch">
+      <div class="launch-screen">
+        <div class="launch-spinner"></div>
+        <h2 class="launch-title">Building your brand.</h2>
+        <p class="launch-sub">We're setting up your workspace, generating designs, and creating your content strategy. This takes about 60 seconds.</p>
+        <div class="log-list" id="logList">
+          <div class="log-item" id="log-slack"><div class="log-dot"></div>Creating Slack channel…</div>
+          <div class="log-item" id="log-canvas"><div class="log-dot"></div>Writing brand canvas…</div>
+          <div class="log-item" id="log-mood"><div class="log-dot"></div>Generating moodboard…</div>
+          <div class="log-item" id="log-guide"><div class="log-dot"></div>Generating brand guide…</div>
+          <div class="log-item" id="log-posts"><div class="log-dot"></div>Creating sample posts…</div>
+          <div class="log-item" id="log-meta"><div class="log-dot"></div>Posting Meta onboarding steps…</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Success -->
+    <div class="success-screen" id="successScreen">
+      <div class="success-icon">✦</div>
+      <h2 class="success-title">You're all set.</h2>
+      <p class="success-sub">Your brand workspace is live. Check your Slack channel for design links and next steps. We'll be in touch within 24 hours.</p>
+    </div>
+
+  </main>
+</div>
+
+<script>
+let currentStep = 0;
+let selectedColors = [];
+let selectedAesthetic = '';
+let brief = {};
+
+function toggleTag(el) { el.classList.toggle('selected'); }
+
+function selectRadio(groupId, el) {
+  document.querySelectorAll(`#${groupId} .radio-pill`).forEach(p => p.classList.remove('selected'));
+  el.classList.add('selected');
+}
+
+function selectAesthetic(card, name) {
+  document.querySelectorAll('.aesthetic-card').forEach(c => c.classList.remove('selected'));
+  card.classList.add('selected');
+  selectedAesthetic = name;
+}
+
+function toggleSwatch(el, hex) {
+  if (el.classList.contains('selected')) {
+    el.classList.remove('selected');
+    selectedColors = selectedColors.filter(c => c !== hex);
+  } else {
+    if (selectedColors.length >= 3) return;
+    el.classList.add('selected');
+    selectedColors.push(hex);
+  }
+}
+
+function getTagValues(containerId) {
+  return [...document.querySelectorAll(`#${containerId} .tag.selected`)].map(t => t.textContent.trim());
+}
+
+function getRadioValue(groupId) {
+  const sel = document.querySelector(`#${groupId} .radio-pill.selected`);
+  return sel ? sel.textContent.trim() : '';
+}
+
+function val(id) { return (document.getElementById(id) || {}).value?.trim() || ''; }
+
+function showStep(n) {
+  document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+  const target = document.getElementById(`step-${n === 'launch' ? 'launch' : n}`);
+  if (target) target.classList.add('active');
+  document.querySelectorAll('.progress-list li').forEach((li, i) => {
+    li.classList.remove('active','done');
+    if (i < n) li.classList.add('done');
+    else if (i === n) li.classList.add('active');
+  });
+}
+
+function next(from) {
+  if (from === 0 && !val('clientName')) { alert('Please enter your brand name.'); return; }
+  if (from === 1 && !val('brandWords')) { alert('Please describe your brand in 3 words.'); return; }
+  if (from === 4) { buildReview(); }
+  currentStep = from + 1;
+  showStep(currentStep);
+  window.scrollTo(0,0);
+}
+
+function back(from) {
+  currentStep = from - 1;
+  showStep(currentStep);
+  window.scrollTo(0,0);
+}
+
+function buildReview() {
+  const customColor = document.getElementById('customColor').value;
+  const allColors = [...selectedColors];
+  if (customColor && customColor !== '#000000' && !allColors.includes(customColor)) allColors.push(customColor);
+
+  const allTags = [...document.querySelectorAll('.tag.selected')].map(t => t.textContent.trim());
+  const platforms = ['Instagram','Facebook','LinkedIn','TikTok','X / Twitter','YouTube','Pinterest'].filter(p => allTags.includes(p));
+  const goals = ['Brand awareness','Lead generation','Agent / talent recruiting','Listing promotion','Community building','Education & thought leadership'].filter(g => allTags.includes(g));
+  const tones = ['Professional','Playful','Inspirational','Edgy','Minimal','Luxurious','Warm','Educational','Bold','Conversational'].filter(t => allTags.includes(t));
+  const fonts = allTags.filter(t => t.includes('Serif') || t.includes('Sans') || t.includes('Script') || t.includes('display') || t.includes('Mixed'));
+
+  brief = {
+    clientName: val('clientName'),
+    industry: val('industry'),
+    website: val('website'),
+    handle: val('handle'),
+    logo: val('logo'),
+    assets: val('assets'),
+    brandWords: val('brandWords'),
+    audience: val('audience'),
+    tones,
+    language: getRadioValue('langGroup'),
+    goals,
+    platforms,
+    aesthetic: selectedAesthetic,
+    aestheticCustom: val('aestheticCustom'),
+    colors: allColors,
+    fonts,
+    promote: val('promote'),
+    competitors: val('competitors'),
+    donts: val('donts'),
+    existingAssets: val('existingAssets'),
+  };
+
+  const slug = brief.clientName.toLowerCase().replace(/\s+/g,'-');
+  document.getElementById('pipeChannel').textContent = `#client-${slug}`;
+  document.getElementById('pipeAesthetic').textContent = brief.aesthetic || 'Custom direction';
+  document.getElementById('pipePlatforms').textContent = brief.platforms.length ? `For: ${brief.platforms.join(', ')}` : 'Instagram format';
+
+  const colorsHtml = brief.colors.length
+    ? brief.colors.map(c => `<span class="color-dot" style="background:${c}"></span>${c}`).join(' ')
+    : '—';
+
+  const rows = [
+    ['Client', brief.clientName],
+    ['Industry', brief.industry || '—'],
+    ['Website', brief.website || '—'],
+    ['Handle', brief.handle || '—'],
+    ['Brand words', brief.brandWords || '—'],
+    ['Audience', brief.audience || '—'],
+    ['Tone', brief.tones.join(', ') || '—'],
+    ['Language', brief.language || '—'],
+    ['Goals', brief.goals.join(', ') || '—'],
+    ['Platforms', brief.platforms.join(', ') || '—'],
+    ['Aesthetic', (brief.aesthetic || '') + (brief.aestheticCustom ? ' — ' + brief.aestheticCustom : '') || '—'],
+    ['Colors', colorsHtml],
+    ['Fonts', brief.fonts.join(', ') || '—'],
+    ['Promoting', brief.promote || '—'],
+    ['Compliance', brief.donts || '—'],
+  ];
+
+  document.getElementById('reviewGrid').innerHTML = rows
+    .map(([k,v]) => `<div class="review-row"><div class="review-key">${k}</div><div class="review-val">${v}</div></div>`)
+    .join('');
+}
+
+function setLog(id, status) {
+  const el = document.getElementById(`log-${id}`);
+  if (!el) return;
+  el.classList.remove('done','running','error');
+  el.classList.add(status);
+}
+
+async function submitBrief() {
+  document.getElementById('launchBtn').disabled = true;
+  showStep('launch');
+  window.scrollTo(0,0);
+
+  const slug = brief.clientName.toLowerCase().replace(/\s+/g,'-');
+
+  const prompt = `ONBOARDING: New client brief submitted. Please execute all steps now.
+
+CLIENT NAME: ${brief.clientName}
+CHANNEL SLUG: client-${slug}
+INDUSTRY: ${brief.industry||'Not specified'}
+WEBSITE: ${brief.website||'Not specified'}
+INSTAGRAM HANDLE: ${brief.handle||'Not specified'}
+LOGO: ${brief.logo||'Not specified'}
+EXISTING ASSETS: ${brief.existingAssets||'None'}
+BRAND WORDS: ${brief.brandWords||'Not specified'}
+TARGET AUDIENCE: ${brief.audience||'Not specified'}
+TONE OF VOICE: ${brief.tones.join(', ')||'Not specified'}
+CONTENT LANGUAGE: ${brief.language||'Not specified'}
+MAIN GOALS: ${brief.goals.join(', ')||'Not specified'}
+PLATFORMS: ${brief.platforms.join(', ')||'Not specified'}
+DESIGN AESTHETIC: ${brief.aesthetic||'Not specified'}${brief.aestheticCustom?' — '+brief.aestheticCustom:''}
+BRAND COLORS: ${brief.colors.join(', ')||'Not specified'}
+FONT PREFERENCE: ${brief.fonts.join(', ')||'Not specified'}
+PROMOTING: ${brief.promote||'Not specified'}
+COMPETITORS/INSPIRATION: ${brief.competitors||'Not specified'}
+DOS AND DONTS: ${brief.donts||'Not specified'}
+
+STEPS TO EXECUTE IN ORDER:
+1. Create Slack channel: client-${slug}
+2. Post brand canvas in channel (overview, audience, tone, palette, 5 content pillars, dos/donts, post frequency by platform, Meta checklist)
+3. Generate Canva moodboard (instagram_post) matching the stated aesthetic and colors
+4. Generate Canva brand guide (doc) with colors, fonts, tone, platform guidelines
+5. Generate 3 Canva Instagram post samples covering different content pillars
+6. Post summary message in Slack channel with all Canva links and Meta Business Suite onboarding steps`;
+
+  const logIds = ['slack','canvas','mood','guide','posts','meta'];
+  let logIndex = 0;
+
+  const logInterval = setInterval(() => {
+    if (logIndex < logIds.length) {
+      if (logIndex > 0) setLog(logIds[logIndex-1], 'done');
+      setLog(logIds[logIndex], 'running');
+      logIndex++;
+    } else {
+      clearInterval(logInterval);
+    }
+  }, 8000);
+
+  try {
+    const res = await fetch('https://marketingverse.app.n8n.cloud', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ prompt, brief })
+    });
+
+    clearInterval(logInterval);
+    logIds.forEach(id => setLog(id, 'done'));
+
+    if (res.ok) {
+      setTimeout(() => {
+        document.getElementById('step-launch').classList.remove('active');
+        document.getElementById('successScreen').style.display = 'block';
+      }, 1000);
+    } else {
+      throw new Error('Server error');
+    }
+  } catch(e) {
+    clearInterval(logInterval);
+    logIds.forEach(id => setLog(id, 'error'));
+    alert('Something went wrong. Please try again or contact us directly.');
+    document.getElementById('launchBtn').disabled = false;
+    showStep(5);
+  }
+}
+</script>
+</body>
+</html>
