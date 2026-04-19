@@ -414,6 +414,9 @@
         <div class="field"><label>Website <span class="optional">optional</span></label><input type="url" id="website" placeholder="https://..." /></div>
         <div class="field"><label>Instagram handle <span class="optional">optional</span></label><input type="text" id="handle" placeholder="@yourhandle" /></div>
       </div>
+      <div class="field"><label>Client email <span class="optional">optional — used to invite them to their Slack channel</span></label><input type="email" id="clientEmail" placeholder="client@theirbusiness.com" /></div>
+      <div class="two-col">
+      </div>
       <div class="field"><label>Existing logo <span class="optional">optional — paste a link or describe it</span></label><input type="text" id="logo" placeholder="Google Drive link, or 'blue wordmark, no icon'" /></div>
       <div class="field"><label>Existing brand assets <span class="optional">optional</span></label><input type="text" id="assets" placeholder="Link to Drive, Dropbox, or describe what you have" /></div>
 
@@ -729,6 +732,7 @@ function buildReview() {
     industry: val('industry'),
     website: val('website'),
     handle: val('handle'),
+    clientEmail: val('clientEmail'),
     logo: val('logo'),
     assets: val('assets'),
     brandWords: val('brandWords'),
@@ -800,6 +804,7 @@ CHANNEL SLUG: client-${slug}
 INDUSTRY: ${brief.industry||'Not specified'}
 WEBSITE: ${brief.website||'Not specified'}
 INSTAGRAM HANDLE: ${brief.handle||'Not specified'}
+CLIENT EMAIL: ${brief.clientEmail||'Not provided'}
 LOGO: ${brief.logo||'Not specified'}
 EXISTING ASSETS: ${brief.existingAssets||'None'}
 BRAND WORDS: ${brief.brandWords||'Not specified'}
@@ -837,7 +842,7 @@ STEPS TO EXECUTE IN ORDER:
   }, 8000);
 
   try {
-    const res = await fetch('https://marketingverse.app.n8n.cloud', {
+    const res = await fetch('YOUR_N8N_WEBHOOK_URL_HERE', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ prompt, brief })
