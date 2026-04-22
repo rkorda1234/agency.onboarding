@@ -842,7 +842,7 @@ STEPS TO EXECUTE IN ORDER:
   }, 8000);
 
   try {
-    const res = await fetch('YOUR_N8N_WEBHOOK_URL_HERE', {
+    const res = await fetch('https://marketingverse.app.n8n.cloud/webhook/c134ad6f-6c22-4a98-8f41-53b771b96d93', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ prompt, brief })
