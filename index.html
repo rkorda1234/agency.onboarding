@@ -412,9 +412,9 @@
       </div>
       <div class="two-col">
         <div class="field"><label>Website <span class="optional">optional</span></label><input type="url" id="website" placeholder="https://..." /></div>
-        <div class="field"><label>Instagram handle <span class="optional">optional</span></label><input type="text" id="handle" placeholder="@yourhandle" /></div>
+        <div class="field"><label>Instagram handle</label><input type="text" id="handle" placeholder="@yourhandle" /></div>
       </div>
-      <div class="field"><label>Client email <span class="optional">optional — used to invite them to their Slack channel</span></label><input type="email" id="clientEmail" placeholder="client@theirbusiness.com" /></div>
+      <div class="field"><label>Client email — used to invite them to their content calendar &amp; Slack</label><input type="email" id="clientEmail" placeholder="client@theirbusiness.com" /></div>
       <div class="two-col">
       </div>
       <div class="field"><label>Existing logo <span class="optional">optional — paste a link or describe it</span></label><input type="text" id="logo" placeholder="Google Drive link, or 'blue wordmark, no icon'" /></div>
@@ -434,7 +434,7 @@
       <div class="field"><label>Describe your brand in 3 words</label><input type="text" id="brandWords" placeholder="e.g. Bold, Innovative, Warm" /></div>
       <div class="field"><label>Target audience</label><textarea id="audience" placeholder="Age, location, lifestyle, profession — the more specific, the better."></textarea></div>
       <div class="field">
-        <label>Tone of voice <span class="optional">select all that apply</span></label>
+        <label>Tone of voice <span class="optional">select at least one</span></label>
         <div class="tags" id="toneTags">
           <span class="tag" onclick="toggleTag(this)">Professional</span>
           <span class="tag" onclick="toggleTag(this)">Playful</span>
@@ -471,7 +471,7 @@
       <p class="section-desc">Your goals shape which content pillars we build and which platforms we prioritize.</p>
 
       <div class="field">
-        <label>Main goals <span class="optional">select all that apply</span></label>
+        <label>Main goals <span class="optional">select at least one</span></label>
         <div class="tags" id="goalTags">
           <span class="tag" onclick="toggleTag(this)">Brand awareness</span>
           <span class="tag" onclick="toggleTag(this)">Lead generation</span>
@@ -482,7 +482,7 @@
         </div>
       </div>
       <div class="field">
-        <label>Platforms <span class="optional">select all that apply</span></label>
+        <label>Platforms <span class="optional">select at least one</span></label>
         <div class="tags" id="platformTags">
           <span class="tag" onclick="toggleTag(this)">Instagram</span>
           <span class="tag" onclick="toggleTag(this)">Facebook</span>
@@ -702,9 +702,29 @@ function showStep(n) {
 }
 
 function next(from) {
-  if (from === 0 && !val('clientName')) { alert('Please enter your brand name.'); return; }
-  if (from === 1 && !val('brandWords')) { alert('Please describe your brand in 3 words.'); return; }
-  if (from === 4) { buildReview(); }
+  if (from === 0) {
+    if (!val('clientName')) { alert('Please enter your brand / business name.'); return; }
+    if (!val('industry')) { alert('Please enter your industry.'); return; }
+    if (!val('handle')) { alert('Please enter your Instagram handle.'); return; }
+    if (!val('clientEmail')) { alert('Please enter the client email.'); return; }
+  }
+  if (from === 1) {
+    if (!val('brandWords')) { alert('Please describe your brand in 3 words.'); return; }
+    if (!val('audience')) { alert('Please describe your target audience.'); return; }
+    if (getTagValues('toneTags').length === 0) { alert('Please select at least one tone of voice.'); return; }
+    if (!getRadioValue('langGroup')) { alert('Please select a content language.'); return; }
+  }
+  if (from === 2) {
+    if (getTagValues('goalTags').length === 0) { alert('Please select at least one main goal.'); return; }
+    if (getTagValues('platformTags').length === 0) { alert('Please select at least one platform.'); return; }
+  }
+  if (from === 3) {
+    if (!selectedAesthetic && !val('aestheticCustom')) { alert('Please select a design aesthetic or describe your own.'); return; }
+  }
+  if (from === 4) {
+    if (!val('promote')) { alert('Please tell us what you want to promote on social media.'); return; }
+    buildReview();
+  }
   currentStep = from + 1;
   showStep(currentStep);
   window.scrollTo(0,0);
