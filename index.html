@@ -842,11 +842,19 @@ STEPS TO EXECUTE IN ORDER:
   }, 8000);
 
   try {
-    const res = await fetch('https://marketingverse.app.n8n.cloud/webhook/c134ad6f-6c22-4a98-8f41-53b771b96d93', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ prompt, brief })
-    });
+    // Run n8n workflow + add client to content calendar in parallel
+    const [res] = await Promise.all([
+      fetch('https://marketingverse.app.n8n.cloud/webhook/c134ad6f-6c22-4a98-8f41-53b771b96d93', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt, brief })
+      }),
+      fetch('https://tranquil-daifuku-960f8b.netlify.app/api/onboard-client', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(brief)
+      }).catch(err => console.warn('Content calendar sync failed:', err))
+    ]);
 
     clearInterval(logInterval);
     logIds.forEach(id => setLog(id, 'done'));
@@ -870,3 +878,4 @@ STEPS TO EXECUTE IN ORDER:
 </script>
 </body>
 </html>
+
