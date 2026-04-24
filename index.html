@@ -291,7 +291,12 @@
     transition: transform var(--transition), border-color var(--transition);
   }
   .swatch:hover { transform: scale(1.12); }
-  .swatch.selected { border-color: var(--orange); }
+  .swatch.selected {
+    outline: 3px solid var(--orange);
+    outline-offset: 3px;
+    transform: scale(1.1);
+    box-shadow: 0 0 0 6px var(--orange-dim);
+  }
   .color-custom { display: flex; align-items: center; gap: 8px; }
   .color-preview { width: 30px; height: 30px; border-radius: 50%; border: 1px solid var(--border); }
   input[type=color] {
