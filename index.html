@@ -7,6 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Inter+Tight:wght@500;600;700;800&display=swap" rel="stylesheet" />
+<script src="https://accounts.google.com/gsi/client" async defer></script>
 <style>
   :root {
     --black: #0a0a0a;
@@ -257,29 +258,42 @@
     font-weight: 500;
   }
 
-  /* Aesthetic cards */
-  .aesthetic-grid {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 10px;
-    margin-top: 4px;
-  }
-  .aesthetic-card {
-    border: 1px solid var(--border);
-    border-radius: 10px;
-    padding: 12px;
+  /* File upload */
+  .file-upload-area {
+    border: 1px dashed var(--border);
+    border-radius: 8px;
+    padding: 20px;
+    text-align: center;
     cursor: pointer;
-    background: var(--surface-2);
     transition: all var(--transition);
+    background: var(--surface-2);
   }
-  .aesthetic-card:hover { border-color: var(--border-hover); }
-  .aesthetic-card.selected {
-    border-color: var(--orange);
-    box-shadow: inset 0 0 0 1px var(--orange), 0 0 0 3px var(--orange-dim);
+  .file-upload-area:hover { border-color: var(--orange); }
+  .file-upload-area.has-file { border-color: var(--orange); border-style: solid; }
+  .file-upload-icon { font-size: 1.4rem; margin-bottom: 6px; }
+  .file-upload-text { font-size: 0.875rem; color: var(--white); font-weight: 500; }
+  .file-upload-sub { font-size: 0.75rem; color: var(--muted); margin-top: 4px; }
+  .file-name { margin-top: 8px; font-size: 0.8rem; color: var(--orange); display: none; }
+
+  /* Google Sign In */
+  .google-btn {
+    display: flex; align-items: center; justify-content: center; gap: 10px;
+    width: 100%; padding: 11px 20px;
+    border: 1px solid var(--border); border-radius: 8px;
+    background: var(--surface-2); color: var(--white);
+    font-family: var(--sans); font-size: 0.875rem; font-weight: 500;
+    cursor: pointer; transition: all var(--transition);
+    margin-bottom: 1.5rem;
   }
-  .aesthetic-swatch { height: 32px; border-radius: 6px; margin-bottom: 8px; }
-  .aesthetic-name { font-size: 0.75rem; font-weight: 600; color: var(--white); font-family: var(--tight); }
-  .aesthetic-sub { font-size: 0.6875rem; color: var(--muted); margin-top: 2px; line-height: 1.3; }
+  .google-btn:hover { border-color: var(--border-hover); background: rgba(255,255,255,0.04); }
+  .google-btn svg { flex-shrink: 0; }
+  .or-divider {
+    display: flex; align-items: center; gap: 12px;
+    font-size: 0.75rem; color: var(--muted); margin-bottom: 1.5rem;
+  }
+  .or-divider::before, .or-divider::after {
+    content: ''; flex: 1; height: 1px; background: var(--border);
+  }
 
   /* Color swatches */
   .color-row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
@@ -435,8 +449,14 @@
     <!-- Step 0: Client Info -->
     <div class="section active" id="step-0">
       <div class="section-eyebrow">Step 1 of 6</div>
-      <h1 class="section-title">Tell us about your business.</h1>
+      <h1 class="section-title">Tell us about you.</h1>
       <p class="section-desc">Basic information so we can set up your workspace and brand assets correctly.</p>
+
+      <button class="google-btn" onclick="signInWithGoogle()">
+        <svg width="18" height="18" viewBox="0 0 18 18"><path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.875 2.684-6.615z"/><path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.184l-2.908-2.258c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332A8.997 8.997 0 0 0 9 18z"/><path fill="#FBBC05" d="M3.964 10.707A5.41 5.41 0 0 1 3.682 9c0-.593.102-1.17.282-1.707V4.961H.957A8.996 8.996 0 0 0 0 9c0 1.452.348 2.827.957 4.039l3.007-2.332z"/><path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0A8.997 8.997 0 0 0 .957 4.961L3.964 6.293C4.672 4.166 6.656 3.58 9 3.58z"/></svg>
+        Sign in with Google
+      </button>
+      <div class="or-divider">or fill in manually</div>
 
       <div class="two-col">
         <div class="field"><label>Brand / business name</label><input type="text" id="clientName" placeholder="e.g. Bloom Studio" /></div>
@@ -446,10 +466,19 @@
         <div class="field"><label>Website <span class="optional">optional</span></label><input type="url" id="website" placeholder="https://..." /></div>
         <div class="field"><label>Instagram handle</label><input type="text" id="handle" placeholder="@yourhandle" /></div>
       </div>
-      <div class="field"><label>Client email — used to invite them to their content calendar &amp; Slack</label><input type="email" id="clientEmail" placeholder="client@theirbusiness.com" /></div>
-      <div class="two-col">
+      <div class="field"><label>Email</label><input type="email" id="clientEmail" placeholder="client@theirbusiness.com" /></div>
+
+      <div class="field">
+        <label>Existing logo <span class="optional">optional</span></label>
+        <div class="file-upload-area" id="logoUploadArea" onclick="document.getElementById('logoFile').click()">
+          <div class="file-upload-icon">↑</div>
+          <div class="file-upload-text">Click to upload your logo</div>
+          <div class="file-upload-sub">PNG, JPG, or SVG — up to 5MB</div>
+        </div>
+        <input type="file" id="logoFile" accept="image/*,.svg" style="display:none" onchange="handleLogoUpload(this)" />
+        <div class="file-name" id="logoFileName"></div>
       </div>
-      <div class="field"><label>Existing logo <span class="optional">optional — paste a link or describe it</span></label><input type="text" id="logo" placeholder="Google Drive link, or 'blue wordmark, no icon'" /></div>
+
       <div class="field"><label>Existing brand assets <span class="optional">optional</span></label><input type="text" id="assets" placeholder="Link to Drive, Dropbox, or describe what you have" /></div>
 
       <div class="nav">
@@ -463,7 +492,7 @@
       <h1 class="section-title">How does your brand speak?</h1>
       <p class="section-desc">We use this to write copy that sounds unmistakably like you — not like a template.</p>
 
-      <div class="field"><label>Describe your brand in 3 words</label><input type="text" id="brandWords" placeholder="e.g. Bold, Innovative, Warm" /></div>
+      <div class="field"><label>Describe your brand in 3–5 words</label><input type="text" id="brandWords" placeholder="e.g. Bold, Innovative, Warm" /></div>
       <div class="field"><label>Target audience</label><textarea id="audience" placeholder="Age, location, lifestyle, profession — the more specific, the better."></textarea></div>
       <div class="field">
         <label>Tone of voice <span class="optional">select at least one</span></label>
@@ -520,9 +549,8 @@
           <span class="tag" onclick="toggleTag(this)">Facebook</span>
           <span class="tag" onclick="toggleTag(this)">LinkedIn</span>
           <span class="tag" onclick="toggleTag(this)">TikTok</span>
-          <span class="tag" onclick="toggleTag(this)">X / Twitter</span>
           <span class="tag" onclick="toggleTag(this)">YouTube</span>
-          <span class="tag" onclick="toggleTag(this)">Pinterest</span>
+          <span class="tag" onclick="toggleTag(this)">Google My Business</span>
         </div>
       </div>
 
@@ -539,42 +567,18 @@
       <p class="section-desc">Pick an aesthetic direction and your colors. We'll use this to generate your moodboard, brand guide, and first posts.</p>
 
       <div class="field">
-        <label>Design aesthetic</label>
-        <div class="aesthetic-grid" id="aestheticGrid">
-          <div class="aesthetic-card" onclick="selectAesthetic(this,'Editorial / Luxury')">
-            <div class="aesthetic-swatch" style="background:linear-gradient(135deg,#111 55%,#f5f5f5 55%)"></div>
-            <div class="aesthetic-name">Editorial / Luxury</div>
-            <div class="aesthetic-sub">Compass-style. Minimal, white space, large type.</div>
-          </div>
-          <div class="aesthetic-card" onclick="selectAesthetic(this,'Bold & Energetic')">
-            <div class="aesthetic-swatch" style="background:linear-gradient(135deg,#FF6B6B 50%,#FECA57 50%)"></div>
-            <div class="aesthetic-name">Bold & Energetic</div>
-            <div class="aesthetic-sub">Vibrant colors, high contrast, loud.</div>
-          </div>
-          <div class="aesthetic-card" onclick="selectAesthetic(this,'Clean & Corporate')">
-            <div class="aesthetic-swatch" style="background:linear-gradient(135deg,#165f8c 50%,#f5f5f5 50%)"></div>
-            <div class="aesthetic-name">Clean & Corporate</div>
-            <div class="aesthetic-sub">Structured, trustworthy, Zillow-style.</div>
-          </div>
-          <div class="aesthetic-card" onclick="selectAesthetic(this,'Warm & Organic')">
-            <div class="aesthetic-swatch" style="background:linear-gradient(135deg,#c8956c 50%,#f0e6d3 50%)"></div>
-            <div class="aesthetic-name">Warm & Organic</div>
-            <div class="aesthetic-sub">Earthy tones, handcrafted, approachable.</div>
-          </div>
-          <div class="aesthetic-card" onclick="selectAesthetic(this,'Dark & Premium')">
-            <div class="aesthetic-swatch" style="background:linear-gradient(135deg,#1a1a2e 50%,#c9a84c 50%)"></div>
-            <div class="aesthetic-name">Dark & Premium</div>
-            <div class="aesthetic-sub">Dark mode, gold accents, ultra high-end.</div>
-          </div>
-          <div class="aesthetic-card" onclick="selectAesthetic(this,'Playful & Creative')">
-            <div class="aesthetic-swatch" style="background:linear-gradient(135deg,#5F27CD 40%,#48DBFB 40%,#48DBFB 70%,#FF9F43 70%)"></div>
-            <div class="aesthetic-name">Playful & Creative</div>
-            <div class="aesthetic-sub">Fun, expressive, social-native.</div>
-          </div>
+        <label>Design aesthetic <span class="optional">pick the vibe that feels most like you</span></label>
+        <div class="tags" id="aestheticGroup" style="margin-bottom:12px">
+          <span class="tag" onclick="selectAesthetic(this,'Editorial / Luxury')">Editorial / Luxury</span>
+          <span class="tag" onclick="selectAesthetic(this,'Bold & Energetic')">Bold &amp; Energetic</span>
+          <span class="tag" onclick="selectAesthetic(this,'Clean & Corporate')">Clean &amp; Corporate</span>
+          <span class="tag" onclick="selectAesthetic(this,'Warm & Organic')">Warm &amp; Organic</span>
+          <span class="tag" onclick="selectAesthetic(this,'Dark & Premium')">Dark &amp; Premium</span>
+          <span class="tag" onclick="selectAesthetic(this,'Playful & Creative')">Playful &amp; Creative</span>
+          <span class="tag" onclick="selectAesthetic(this,'Minimalist')">Minimalist</span>
+          <span class="tag" onclick="selectAesthetic(this,'Retro / Vintage')">Retro / Vintage</span>
         </div>
-        <div class="field" style="margin-top:12px;margin-bottom:0">
-          <input type="text" id="aestheticCustom" placeholder='Or describe your own — e.g. "Like Compass but warmer, with more personality"' />
-        </div>
+        <input type="text" id="aestheticCustom" placeholder='Or describe your own in a few words…' />
       </div>
 
       <div class="field">
@@ -688,7 +692,43 @@
 let currentStep = 0;
 let selectedColors = [];
 let selectedAesthetic = '';
+let logoDataUrl = '';
 let brief = {};
+
+// Google Sign In
+function signInWithGoogle() {
+  google.accounts.id.initialize({
+    client_id: 'YOUR_GOOGLE_CLIENT_ID',
+    callback: (res) => {
+      const payload = JSON.parse(atob(res.credential.split('.')[1]));
+      if (payload.email) document.getElementById('clientEmail').value = payload.email;
+      if (payload.name) {
+        const nameEl = document.getElementById('clientName');
+        if (!nameEl.value) nameEl.value = payload.name;
+      }
+    }
+  });
+  google.accounts.id.prompt();
+}
+
+function handleLogoUpload(input) {
+  const file = input.files[0];
+  if (!file) return;
+  if (file.size > 5 * 1024 * 1024) { alert('File too large. Max 5MB.'); input.value = ''; return; }
+  const reader = new FileReader();
+  reader.onload = e => {
+    logoDataUrl = e.target.result;
+    const nameEl = document.getElementById('logoFileName');
+    nameEl.textContent = '✓ ' + file.name;
+    nameEl.style.display = 'block';
+    const area = document.getElementById('logoUploadArea');
+    area.classList.add('has-file');
+    area.querySelector('.file-upload-text').textContent = file.name;
+    area.querySelector('.file-upload-sub').textContent = 'Click to change';
+    area.querySelector('.file-upload-icon').textContent = '✓';
+  };
+  reader.readAsDataURL(file);
+}
 
 function toggleTag(el) { el.classList.toggle('selected'); }
 
@@ -697,9 +737,9 @@ function selectRadio(groupId, el) {
   el.classList.add('selected');
 }
 
-function selectAesthetic(card, name) {
-  document.querySelectorAll('.aesthetic-card').forEach(c => c.classList.remove('selected'));
-  card.classList.add('selected');
+function selectAesthetic(el, name) {
+  document.querySelectorAll('#aestheticGroup .tag').forEach(c => c.classList.remove('selected'));
+  el.classList.add('selected');
   selectedAesthetic = name;
 }
 
@@ -788,7 +828,7 @@ function buildReview() {
   });
 
   const allTags = [...document.querySelectorAll('.tag.selected')].map(t => t.textContent.trim());
-  const platforms = ['Instagram','Facebook','LinkedIn','TikTok','X / Twitter','YouTube','Pinterest'].filter(p => allTags.includes(p));
+  const platforms = ['Instagram','Facebook','LinkedIn','TikTok','YouTube','Google My Business'].filter(p => allTags.includes(p));
   const goals = ['Brand awareness','Lead generation','Agent / talent recruiting','Listing promotion','Community building','Education & thought leadership'].filter(g => allTags.includes(g));
   const tones = ['Professional','Playful','Inspirational','Edgy','Minimal','Luxurious','Warm','Educational','Bold','Conversational'].filter(t => allTags.includes(t));
   const fonts = allTags.filter(t => t.includes('Serif') || t.includes('Sans') || t.includes('Script') || t.includes('display') || t.includes('Mixed'));
@@ -799,22 +839,23 @@ function buildReview() {
     website: val('website'),
     handle: val('handle'),
     clientEmail: val('clientEmail'),
-    logo: val('logo'),
+    logo: logoDataUrl ? '[File uploaded]' : '',
+    logoData: logoDataUrl || '',
     assets: val('assets'),
     brandWords: val('brandWords'),
-    audience: val('audience'),
-    tones,
-    language: getRadioValue('langGroup'),
+    targetAudience: val('audience'),
+    toneOfVoice: tones,
+    contentLanguage: getRadioValue('langGroup'),
     goals,
     platforms,
-    aesthetic: selectedAesthetic,
+    designAesthetic: selectedAesthetic,
     aestheticCustom: val('aestheticCustom'),
     colors: allColors,
-    fonts,
+    fontStyle: fonts,
     promote: val('promote'),
     competitors: val('competitors'),
-    donts: val('donts'),
-    existingAssets: val('existingAssets'),
+    dosAndDonts: val('donts'),
+    assetLinks: val('existingAssets'),
   };
 
   const slug = brief.clientName.toLowerCase().replace(/\s+/g,'-');
@@ -872,19 +913,19 @@ WEBSITE: ${brief.website||'Not specified'}
 INSTAGRAM HANDLE: ${brief.handle||'Not specified'}
 CLIENT EMAIL: ${brief.clientEmail||'Not provided'}
 LOGO: ${brief.logo||'Not specified'}
-EXISTING ASSETS: ${brief.existingAssets||'None'}
+EXISTING ASSETS: ${brief.assetLinks||'None'}
 BRAND WORDS: ${brief.brandWords||'Not specified'}
-TARGET AUDIENCE: ${brief.audience||'Not specified'}
-TONE OF VOICE: ${brief.tones.join(', ')||'Not specified'}
-CONTENT LANGUAGE: ${brief.language||'Not specified'}
-MAIN GOALS: ${brief.goals.join(', ')||'Not specified'}
-PLATFORMS: ${brief.platforms.join(', ')||'Not specified'}
-DESIGN AESTHETIC: ${brief.aesthetic||'Not specified'}${brief.aestheticCustom?' — '+brief.aestheticCustom:''}
-BRAND COLORS: ${brief.colors.join(', ')||'Not specified'}
-FONT PREFERENCE: ${brief.fonts.join(', ')||'Not specified'}
+TARGET AUDIENCE: ${brief.targetAudience||'Not specified'}
+TONE OF VOICE: ${(brief.toneOfVoice||[]).join(', ')||'Not specified'}
+CONTENT LANGUAGE: ${brief.contentLanguage||'Not specified'}
+MAIN GOALS: ${(brief.goals||[]).join(', ')||'Not specified'}
+PLATFORMS: ${(brief.platforms||[]).join(', ')||'Not specified'}
+DESIGN AESTHETIC: ${brief.designAesthetic||'Not specified'}${brief.aestheticCustom?' — '+brief.aestheticCustom:''}
+BRAND COLORS: ${(brief.colors||[]).join(', ')||'Not specified'}
+FONT PREFERENCE: ${(brief.fontStyle||[]).join(', ')||'Not specified'}
 PROMOTING: ${brief.promote||'Not specified'}
 COMPETITORS/INSPIRATION: ${brief.competitors||'Not specified'}
-DOS AND DONTS: ${brief.donts||'Not specified'}
+DOS AND DONTS: ${brief.dosAndDonts||'Not specified'}
 
 STEPS TO EXECUTE IN ORDER:
 1. Create Slack channel: client-${slug}
@@ -918,7 +959,7 @@ STEPS TO EXECUTE IN ORDER:
       fetch('https://tranquil-daifuku-960f8b.netlify.app/api/onboard-client', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(brief)
+        body: JSON.stringify({ ...brief, logoData: undefined })
       }).catch(err => console.warn('Content calendar sync failed:', err))
     ]);
 
