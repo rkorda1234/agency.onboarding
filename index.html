@@ -821,27 +821,27 @@ function buildReview() {
   document.getElementById('pipeAesthetic').textContent = brief.aesthetic || 'Custom direction';
   document.getElementById('pipePlatforms').textContent = brief.platforms.length ? `For: ${brief.platforms.join(', ')}` : 'Instagram format';
 
-  const colorsHtml = brief.colors.length
+  const colorsHtml = (brief.colors||[]).length
     ? brief.colors.map(c => `<span class="color-dot" style="background:${c}"></span>${c}`).join(' ')
     : '—';
 
   const rows = [
-    ['Client', brief.clientName],
-    ['Industry', brief.industry || '—'],
-    ['Website', brief.website || '—'],
-    ['Handle', brief.handle || '—'],
+    ['Client',    brief.clientName],
+    ['Industry',  brief.industry  || '—'],
+    ['Website',   brief.website   || '—'],
+    ['Handle',    brief.handle    || '—'],
     ['Brand words', brief.brandWords || '—'],
-    ['Audience', brief.audience || '—'],
-    ['Tone', brief.tones.join(', ') || '—'],
-    ['Language', brief.language || '—'],
-    ['Goals', brief.goals.join(', ') || '—'],
-    ['Platforms', brief.platforms.join(', ') || '—'],
-    ['Aesthetic', (brief.aesthetic || '') + (brief.aestheticCustom ? ' — ' + brief.aestheticCustom : '') || '—'],
-    ['Colors', colorsHtml],
-    ['Fonts', brief.fonts.join(', ') || '—'],
-    ['Promoting', brief.promote || '—'],
-    ['Compliance', brief.donts || '—'],
-  ];
+    ['Audience',  brief.targetAudience  || '—'],
+    ['Tone',      (brief.toneOfVoice  || []).join(', ') || '—'],
+    ['Language',  brief.contentLanguage || '—'],
+    ['Goals',     (brief.goals     || []).join(', ') || '—'],
+    ['Platforms', (brief.platforms || []).join(', ') || '—'],
+    ['Aesthetic', (brief.designAesthetic || '') + (brief.aestheticCustom ? ' — ' + brief.aestheticCustom : '') || '—'],
+    ['Colors',    colorsHtml],
+    ['Fonts',     (brief.fontStyle || []).join(', ') || '—'],
+    ['Promoting', brief.promote   || '—'],
+    ['Compliance', brief.dosAndDonts || '—'],
+  ].filter(([, v]) => v && v !== '—');
 
   document.getElementById('reviewGrid').innerHTML = rows
     .map(([k,v]) => `<div class="review-row"><div class="review-key">${k}</div><div class="review-val">${v}</div></div>`)
