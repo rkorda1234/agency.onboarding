@@ -910,18 +910,11 @@ STEPS TO EXECUTE IN ORDER:
 
   try {
     // Run n8n workflow + add client to content calendar in parallel
-    const [res] = await Promise.all([
-      fetch('https://marketingverse.app.n8n.cloud/webhook/c134ad6f-6c22-4a98-8f41-53b771b96d93', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ prompt, brief })
-      }),
-      fetch('https://calendar.the-marketingverse.com/api/onboard-client', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...brief, logoData: undefined })
-      }).catch(err => console.warn('Content calendar sync failed:', err))
-    ]);
+    const res = await fetch('https://marketingverse.app.n8n.cloud/webhook/...', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ prompt, brief })
+});
 
     clearInterval(logInterval);
     logIds.forEach(id => setLog(id, 'done'));
