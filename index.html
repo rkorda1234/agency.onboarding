@@ -6,7 +6,7 @@
 <title>Client Onboarding — Marketingverse</title>
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Inter+Tight:wght@500;600;700;800&display=swap" rel="stylesheet" />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=Inter+Tight:wght@500;600;700;800&family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Dancing+Script:wght@600&family=Bebas+Neue&display=swap" rel="stylesheet" />
 <style>
   :root {
     --black: #0a0a0a;
@@ -265,6 +265,13 @@
     color: #fff;
     font-weight: 500;
   }
+
+  /* Font preview pills */
+  .tag.font-serif   { font-family: 'Playfair Display', serif; font-style: italic; }
+  .tag.font-sans    { font-family: 'Inter', sans-serif; letter-spacing: -0.02em; }
+  .tag.font-script  { font-family: 'Dancing Script', cursive; font-size: 0.95rem; }
+  .tag.font-display { font-family: 'Bebas Neue', sans-serif; letter-spacing: 0.1em; font-size: 0.9rem; }
+  .tag.font-mixed   { font-family: 'Playfair Display', serif; font-style: italic; }
 
   /* File upload */
   .file-upload-area {
@@ -662,11 +669,11 @@
       <div class="field">
         <label>Font style preference <span class="optional">select all that apply</span></label>
         <div class="tags">
-          <span class="tag" onclick="toggleTag(this)">Serif — elegant, editorial</span>
-          <span class="tag" onclick="toggleTag(this)">Sans-serif — clean, modern</span>
-          <span class="tag" onclick="toggleTag(this)">Script — handwritten, personal</span>
-          <span class="tag" onclick="toggleTag(this)">Bold display — loud, impactful</span>
-          <span class="tag" onclick="toggleTag(this)">Mixed — varied, layered</span>
+          <span class="tag font-serif"   onclick="toggleTag(this)">Serif — elegant, editorial</span>
+          <span class="tag font-sans"    onclick="toggleTag(this)">Sans-serif — clean, modern</span>
+          <span class="tag font-script"  onclick="toggleTag(this)">Script — handwritten, personal</span>
+          <span class="tag font-display" onclick="toggleTag(this)">Bold display — loud, impactful</span>
+          <span class="tag font-mixed"   onclick="toggleTag(this)">Mixed — varied, layered</span>
         </div>
       </div>
 
@@ -685,22 +692,27 @@
       <div class="field"><label>What do you want to promote on social media?</label><textarea id="promote" style="min-height:110px" placeholder="Tell us about your products, services, unique selling points, what makes you different…"></textarea></div>
 
       <div class="field">
-        <label>What makes you different from other agents in your area?</label>
+        <label id="differentiatorLabel">What makes you different from other agents in your area?</label>
         <textarea id="differentiator" style="min-height:80px" placeholder="1–2 sentences. E.g. I'm the only bilingual luxury agent in Brickell who also invests personally in pre-construction."></textarea>
       </div>
 
       <div class="field">
         <label>Biggest objection you hear from clients <span class="optional">optional</span></label>
-        <div class="radio-group" id="objectionGroup">
-          <div class="radio-pill" onclick="selectRadioWithOther('objectionGroup', this, 'objectionOtherWrap')">Rates are too high right now</div>
-          <div class="radio-pill" onclick="selectRadioWithOther('objectionGroup', this, 'objectionOtherWrap')">I can find deals myself online</div>
-          <div class="radio-pill" onclick="selectRadioWithOther('objectionGroup', this, 'objectionOtherWrap')">It's not the right time to buy/sell</div>
-          <div class="radio-pill" onclick="selectRadioWithOther('objectionGroup', this, 'objectionOtherWrap')">I don't trust agents / bad past experience</div>
-          <div class="radio-pill" onclick="selectRadioWithOther('objectionGroup', this, 'objectionOtherWrap')">I'm just looking, not ready yet</div>
-          <div class="radio-pill" onclick="selectRadioWithOther('objectionGroup', this, 'objectionOtherWrap')">Other</div>
+        <div id="objectionREWrap">
+          <div class="radio-group" id="objectionGroup">
+            <div class="radio-pill" onclick="selectRadioWithOther('objectionGroup', this, 'objectionOtherWrap')">Rates are too high right now</div>
+            <div class="radio-pill" onclick="selectRadioWithOther('objectionGroup', this, 'objectionOtherWrap')">I can find deals myself online</div>
+            <div class="radio-pill" onclick="selectRadioWithOther('objectionGroup', this, 'objectionOtherWrap')">It's not the right time to buy/sell</div>
+            <div class="radio-pill" onclick="selectRadioWithOther('objectionGroup', this, 'objectionOtherWrap')">I don't trust agents / bad past experience</div>
+            <div class="radio-pill" onclick="selectRadioWithOther('objectionGroup', this, 'objectionOtherWrap')">I'm just looking, not ready yet</div>
+            <div class="radio-pill" onclick="selectRadioWithOther('objectionGroup', this, 'objectionOtherWrap')">Other</div>
+          </div>
+          <div id="objectionOtherWrap" style="display:none; margin-top:10px">
+            <input type="text" id="objectionOther" placeholder="Describe the objection…" />
+          </div>
         </div>
-        <div id="objectionOtherWrap" style="display:none; margin-top:10px">
-          <input type="text" id="objectionOther" placeholder="Describe the objection…" />
+        <div id="objectionGenericWrap" style="display:none">
+          <input type="text" id="objectionText" placeholder="What's the biggest hesitation you hear before clients sign up?" />
         </div>
       </div>
 
@@ -804,6 +816,7 @@ let selectedColors = [];
 let selectedAesthetic = '';
 let logoDataUrl = '';
 let brief = {};
+let skipRE = false;
 
 function handleLogoUpload(input) {
   const file = input.files[0];
@@ -864,6 +877,7 @@ function getRadioValue(groupId) {
 }
 
 function getTopObjection() {
+  if (skipRE) return val('objectionText');
   const selected = getRadioValue('objectionGroup');
   if (!selected) return '';
   if (selected === 'Other') {
@@ -874,6 +888,50 @@ function getTopObjection() {
 }
 
 function val(id) { return (document.getElementById(id) || {}).value?.trim() || ''; }
+
+function isRealEstate() {
+  return /real\s*estate|realtor|broker|realty/i.test(val('industry'));
+}
+
+function updateForIndustry() {
+  skipRE = !isRealEstate();
+
+  // Show/hide RE step in sidebar
+  const reLi = document.querySelector('.progress-list li[data-step="3"]');
+  if (reLi) reLi.style.display = skipRE ? 'none' : '';
+
+  // Update sidebar subtitle with estimated time
+  const subEl = document.querySelector('.sidebar-sub');
+  if (subEl) subEl.textContent = skipRE
+    ? 'This takes about 5 minutes. Your answers go directly into our content pipeline — no middlemen, no delays.'
+    : 'This takes about 7 minutes. Your answers go directly into our content pipeline — no middlemen, no delays.';
+
+  // Update differentiator label + placeholder
+  const diffLabel = document.getElementById('differentiatorLabel');
+  if (diffLabel) diffLabel.textContent = skipRE
+    ? 'What makes you different from competitors in your area?'
+    : 'What makes you different from other agents in your area?';
+  const diffTextarea = document.getElementById('differentiator');
+  if (diffTextarea) diffTextarea.placeholder = skipRE
+    ? '1–2 sentences about your unique angle, experience, or approach.'
+    : "1–2 sentences. E.g. I'm the only bilingual luxury agent in Brickell who also invests personally in pre-construction.";
+
+  // Show/hide RE vs generic objection inputs
+  const objRE = document.getElementById('objectionREWrap');
+  const objGen = document.getElementById('objectionGenericWrap');
+  if (objRE) objRE.style.display = skipRE ? 'none' : 'block';
+  if (objGen) objGen.style.display = skipRE ? 'block' : 'none';
+
+  // Update step eyebrow labels for all steps
+  const total = skipRE ? 6 : 7;
+  [
+    ['step-0', 1], ['step-1', 2], ['step-2', 3], ['step-3', 4],
+    ['step-4', skipRE ? 4 : 5], ['step-5', skipRE ? 5 : 6], ['step-6', skipRE ? 6 : 7]
+  ].forEach(([id, num]) => {
+    const el = document.querySelector(`#${id} .section-eyebrow`);
+    if (el) el.textContent = `Step ${num} of ${total}`;
+  });
+}
 
 function showStep(n) {
   document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
@@ -892,6 +950,7 @@ function next(from) {
     if (!val('industry')) { alert('Please enter your industry.'); return; }
     if (!val('handle')) { alert('Please enter your Instagram handle.'); return; }
     if (!val('clientEmail')) { alert('Please enter the client email.'); return; }
+    updateForIndustry();
   }
   if (from === 1) {
     if (!val('brandWords')) { alert('Please describe your brand in 3 words.'); return; }
@@ -911,16 +970,18 @@ function next(from) {
   }
   if (from === 5) {
     if (!val('promote')) { alert('Please tell us what you want to promote on social media.'); return; }
-    if (!val('differentiator')) { alert('Please tell us what makes you different from other agents.'); return; }
+    if (!val('differentiator')) { alert('Please tell us what makes you different from ' + (skipRE ? 'competitors' : 'other agents') + '.'); return; }
     buildReview();
   }
   currentStep = from + 1;
+  if (skipRE && currentStep === 3) currentStep = 4;
   showStep(currentStep);
   window.scrollTo(0,0);
 }
 
 function back(from) {
   currentStep = from - 1;
+  if (skipRE && currentStep === 3) currentStep = 2;
   showStep(currentStep);
   window.scrollTo(0,0);
 }
