@@ -192,6 +192,13 @@
     font-size: 0.75rem;
     margin-left: 4px;
   }
+  .field .helper {
+    font-size: 0.75rem;
+    color: var(--muted);
+    margin-top: 6px;
+    font-style: italic;
+    line-height: 1.5;
+  }
 
   input[type=text], input[type=url], input[type=email], textarea, select {
     width: 100%;
@@ -275,7 +282,6 @@
   .file-upload-text { font-size: 0.875rem; color: var(--white); font-weight: 500; }
   .file-upload-sub { font-size: 0.75rem; color: var(--muted); margin-top: 4px; }
   .file-name { margin-top: 8px; font-size: 0.8rem; color: var(--orange); display: none; }
-
 
   /* Color swatches */
   .color-row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
@@ -413,14 +419,15 @@
   <aside class="sidebar">
     <div class="sidebar-logo">Marketingverse<span class="logo-dot"></span></div>
     <div class="sidebar-headline">Let's build your brand presence.</div>
-    <p class="sidebar-sub">This takes about 5 minutes. Your answers go directly into our content pipeline — no middlemen, no delays.</p>
+    <p class="sidebar-sub">This takes about 7 minutes. Your answers go directly into our content pipeline — no middlemen, no delays.</p>
     <ul class="progress-list" id="progressList">
       <li class="active" data-step="0"><div class="step-dot">1</div> Client info</li>
       <li data-step="1"><div class="step-dot">2</div> Brand voice</li>
       <li data-step="2"><div class="step-dot">3</div> Goals & platforms</li>
-      <li data-step="3"><div class="step-dot">4</div> Visual identity</li>
-      <li data-step="4"><div class="step-dot">5</div> Content direction</li>
-      <li data-step="5"><div class="step-dot">6</div> Review & launch</li>
+      <li data-step="3"><div class="step-dot">4</div> Real estate profile</li>
+      <li data-step="4"><div class="step-dot">5</div> Visual identity</li>
+      <li data-step="5"><div class="step-dot">6</div> Content direction</li>
+      <li data-step="6"><div class="step-dot">7</div> Review & launch</li>
     </ul>
     <div class="sidebar-footer">Powered by Claude AI &middot; Secured</div>
   </aside>
@@ -430,7 +437,7 @@
 
     <!-- Step 0: Client Info -->
     <div class="section active" id="step-0">
-      <div class="section-eyebrow">Step 1 of 6</div>
+      <div class="section-eyebrow">Step 1 of 7</div>
       <h1 class="section-title">Tell us about you.</h1>
       <p class="section-desc">Basic information so we can set up your workspace and brand assets correctly.</p>
 
@@ -464,7 +471,7 @@
 
     <!-- Step 1: Brand Voice -->
     <div class="section" id="step-1">
-      <div class="section-eyebrow">Step 2 of 6</div>
+      <div class="section-eyebrow">Step 2 of 7</div>
       <h1 class="section-title">How does your brand speak?</h1>
       <p class="section-desc">We use this to write copy that sounds unmistakably like you — not like a template.</p>
 
@@ -503,7 +510,7 @@
 
     <!-- Step 2: Goals & Platforms -->
     <div class="section" id="step-2">
-      <div class="section-eyebrow">Step 3 of 6</div>
+      <div class="section-eyebrow">Step 3 of 7</div>
       <h1 class="section-title">What do you want to achieve?</h1>
       <p class="section-desc">Your goals shape which content pillars we build and which platforms we prioritize.</p>
 
@@ -536,9 +543,82 @@
       </div>
     </div>
 
-    <!-- Step 3: Visual Identity -->
+    <!-- Step 3: Real Estate Profile (NEW) -->
     <div class="section" id="step-3">
-      <div class="section-eyebrow">Step 4 of 6</div>
+      <div class="section-eyebrow">Step 4 of 7</div>
+      <h1 class="section-title">Your real estate profile.</h1>
+      <p class="section-desc">Help us understand your niche and market so every piece of content speaks to the right buyer or seller.</p>
+
+      <div class="field">
+        <label>Primary specialty <span class="optional">select all that apply</span></label>
+        <div class="tags" id="reSpecialtyTags">
+          <span class="tag" onclick="toggleTag(this)">Residential Resale</span>
+          <span class="tag" onclick="toggleTag(this)">New Construction / Pre-Construction</span>
+          <span class="tag" onclick="toggleTag(this)">Luxury / High-End</span>
+          <span class="tag" onclick="toggleTag(this)">Investment Properties</span>
+          <span class="tag" onclick="toggleTag(this)">Commercial</span>
+          <span class="tag" onclick="toggleTag(this)">Vacation / Second Homes</span>
+          <span class="tag" onclick="toggleTag(this)">First-Time Buyers</span>
+          <span class="tag" onclick="toggleTag(this)">Relocation / Corporate Relocation</span>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Who do you mainly work with? <span class="optional">select all that apply</span></label>
+        <div class="tags" id="clientFocusTags">
+          <span class="tag" onclick="toggleTag(this)">Buyers</span>
+          <span class="tag" onclick="toggleTag(this)">Sellers</span>
+          <span class="tag" onclick="toggleTag(this)">Investors</span>
+          <span class="tag" onclick="toggleTag(this)">Renters</span>
+          <span class="tag" onclick="toggleTag(this)">All of the above</span>
+        </div>
+      </div>
+
+      <div class="two-col">
+        <div class="field">
+          <label>Price range / market tier <span class="optional">optional</span></label>
+          <div class="radio-group" id="marketTierGroup">
+            <div class="radio-pill" onclick="selectRadio('marketTierGroup', this)">Entry-level</div>
+            <div class="radio-pill" onclick="selectRadio('marketTierGroup', this)">Mid-market</div>
+            <div class="radio-pill" onclick="selectRadio('marketTierGroup', this)">Luxury ($1M+)</div>
+            <div class="radio-pill" onclick="selectRadio('marketTierGroup', this)">Ultra-luxury ($5M+)</div>
+            <div class="radio-pill" onclick="selectRadio('marketTierGroup', this)">Mixed / varies</div>
+          </div>
+        </div>
+        <div class="field">
+          <label>Years of experience <span class="optional">optional</span></label>
+          <div class="radio-group" id="experienceGroup">
+            <div class="radio-pill" onclick="selectRadio('experienceGroup', this)">Less than 2 years</div>
+            <div class="radio-pill" onclick="selectRadio('experienceGroup', this)">2–5 years</div>
+            <div class="radio-pill" onclick="selectRadio('experienceGroup', this)">5–10 years</div>
+            <div class="radio-pill" onclick="selectRadio('experienceGroup', this)">10+ years</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Your market area</label>
+        <input type="text" id="marketArea" placeholder='e.g. "Miami-Dade, Brickell & Coral Gables"' />
+      </div>
+
+      <div class="field">
+        <label>Team or solo agent? <span class="optional">optional</span></label>
+        <div class="radio-group" id="teamGroup">
+          <div class="radio-pill" onclick="selectRadio('teamGroup', this)">Solo agent</div>
+          <div class="radio-pill" onclick="selectRadio('teamGroup', this)">Small team (2–5)</div>
+          <div class="radio-pill" onclick="selectRadio('teamGroup', this)">Larger team / brokerage</div>
+        </div>
+      </div>
+
+      <div class="nav">
+        <button class="btn-back" onclick="back(3)">← Back</button>
+        <button class="btn-next" onclick="next(3)">Continue <span class="arrow">→</span></button>
+      </div>
+    </div>
+
+    <!-- Step 4: Visual Identity (was step-3) -->
+    <div class="section" id="step-4">
+      <div class="section-eyebrow">Step 5 of 7</div>
       <h1 class="section-title">What should your brand look like?</h1>
       <p class="section-desc">Pick an aesthetic direction and your colors. We'll use this to generate your moodboard, brand guide, and first posts.</p>
 
@@ -591,31 +671,85 @@
       </div>
 
       <div class="nav">
-        <button class="btn-back" onclick="back(3)">← Back</button>
-        <button class="btn-next" onclick="next(3)">Continue <span class="arrow">→</span></button>
+        <button class="btn-back" onclick="back(4)">← Back</button>
+        <button class="btn-next" onclick="next(4)">Continue <span class="arrow">→</span></button>
       </div>
     </div>
 
-    <!-- Step 4: Content Direction -->
-    <div class="section" id="step-4">
-      <div class="section-eyebrow">Step 5 of 6</div>
+    <!-- Step 5: Content Direction (was step-4) -->
+    <div class="section" id="step-5">
+      <div class="section-eyebrow">Step 6 of 7</div>
       <h1 class="section-title">What's your story?</h1>
       <p class="section-desc">The more you share here, the better the content. Don't hold back.</p>
 
       <div class="field"><label>What do you want to promote on social media?</label><textarea id="promote" style="min-height:110px" placeholder="Tell us about your products, services, unique selling points, what makes you different…"></textarea></div>
+
+      <div class="field">
+        <label>What makes you different from other agents in your area?</label>
+        <textarea id="differentiator" style="min-height:80px" placeholder="1–2 sentences. E.g. I'm the only bilingual luxury agent in Brickell who also invests personally in pre-construction."></textarea>
+      </div>
+
+      <div class="field">
+        <label>Biggest objection you hear from clients <span class="optional">optional</span></label>
+        <div class="radio-group" id="objectionGroup">
+          <div class="radio-pill" onclick="selectRadioWithOther('objectionGroup', this, 'objectionOtherWrap')">Rates are too high right now</div>
+          <div class="radio-pill" onclick="selectRadioWithOther('objectionGroup', this, 'objectionOtherWrap')">I can find deals myself online</div>
+          <div class="radio-pill" onclick="selectRadioWithOther('objectionGroup', this, 'objectionOtherWrap')">It's not the right time to buy/sell</div>
+          <div class="radio-pill" onclick="selectRadioWithOther('objectionGroup', this, 'objectionOtherWrap')">I don't trust agents / bad past experience</div>
+          <div class="radio-pill" onclick="selectRadioWithOther('objectionGroup', this, 'objectionOtherWrap')">I'm just looking, not ready yet</div>
+          <div class="radio-pill" onclick="selectRadioWithOther('objectionGroup', this, 'objectionOtherWrap')">Other</div>
+        </div>
+        <div id="objectionOtherWrap" style="display:none; margin-top:10px">
+          <input type="text" id="objectionOther" placeholder="Describe the objection…" />
+        </div>
+      </div>
+
+      <div class="field">
+        <label>What do you want to be known for a year from now? <span class="optional">optional</span></label>
+        <input type="text" id="positioningGoal" placeholder="e.g. The go-to agent for Latin American investors buying in South Florida" />
+      </div>
+
+      <div class="field">
+        <label>On-camera comfort level <span class="optional">optional</span></label>
+        <div class="radio-group" id="cameraGroup">
+          <div class="radio-pill" onclick="selectRadio('cameraGroup', this)">Very comfortable, love being on camera</div>
+          <div class="radio-pill" onclick="selectRadio('cameraGroup', this)">Somewhat comfortable</div>
+          <div class="radio-pill" onclick="selectRadio('cameraGroup', this)">Prefer voiceover / behind-the-scenes only</div>
+          <div class="radio-pill" onclick="selectRadio('cameraGroup', this)">Prefer not to be on camera at all</div>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>What do you have access to? <span class="optional">select all that apply</span></label>
+        <div class="tags" id="resourcesTags">
+          <span class="tag" onclick="toggleTag(this)">Smartphone camera only</span>
+          <span class="tag" onclick="toggleTag(this)">Professional photos</span>
+          <span class="tag" onclick="toggleTag(this)">Professional video / videographer</span>
+          <span class="tag" onclick="toggleTag(this)">Drone footage</span>
+          <span class="tag" onclick="toggleTag(this)">Branded office / open house locations</span>
+          <span class="tag" onclick="toggleTag(this)">None of the above yet</span>
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Your personal hook <span class="optional">optional</span></label>
+        <textarea id="personalHook" style="min-height:80px" placeholder="Any personal story, background, bilingual ability, community ties, or life detail worth weaving into content."></textarea>
+        <div class="helper">Doesn't need to be polished, just real.</div>
+      </div>
+
       <div class="field"><label>Competitors or brands you admire <span class="optional">optional</span></label><input type="text" id="competitors" placeholder="e.g. @compass, @apple — accounts whose look and feel inspires you" /></div>
       <div class="field"><label>Do's, don'ts, or compliance requirements <span class="optional">optional</span></label><textarea id="donts" style="min-height:70px" placeholder="e.g. NAR advertising rules, no stock photos, always use real people, Fair Housing disclosures required…"></textarea></div>
       <div class="field"><label>Existing content or assets to reference <span class="optional">optional</span></label><input type="text" id="existingAssets" placeholder="Google Drive or Dropbox link to photos, past posts, brand materials…" /></div>
 
       <div class="nav">
-        <button class="btn-back" onclick="back(4)">← Back</button>
-        <button class="btn-next" onclick="next(4)">Review brief <span class="arrow">→</span></button>
+        <button class="btn-back" onclick="back(5)">← Back</button>
+        <button class="btn-next" onclick="next(5)">Review brief <span class="arrow">→</span></button>
       </div>
     </div>
 
-    <!-- Step 5: Review -->
-    <div class="section" id="step-5">
-      <div class="section-eyebrow">Step 6 of 6</div>
+    <!-- Step 6: Review (was step-5) -->
+    <div class="section" id="step-6">
+      <div class="section-eyebrow">Step 7 of 7</div>
       <h1 class="section-title">Looks good?</h1>
       <p class="section-desc">Review your brief below, then launch. We'll create your Slack workspace, brand guide, and first content assets automatically.</p>
 
@@ -632,7 +766,7 @@
       </div>
 
       <div class="nav">
-        <button class="btn-back" onclick="back(5)">← Edit</button>
+        <button class="btn-back" onclick="back(6)">← Edit</button>
         <button class="btn-next" onclick="submitBrief()" id="launchBtn">Launch onboarding <span class="arrow">→</span></button>
       </div>
     </div>
@@ -697,6 +831,12 @@ function selectRadio(groupId, el) {
   el.classList.add('selected');
 }
 
+function selectRadioWithOther(groupId, el, wrapperId) {
+  selectRadio(groupId, el);
+  const wrap = document.getElementById(wrapperId);
+  if (wrap) wrap.style.display = el.textContent.trim() === 'Other' ? 'block' : 'none';
+}
+
 function selectAesthetic(el, name) {
   document.querySelectorAll('#aestheticGroup .tag').forEach(c => c.classList.remove('selected'));
   el.classList.add('selected');
@@ -721,6 +861,16 @@ function getTagValues(containerId) {
 function getRadioValue(groupId) {
   const sel = document.querySelector(`#${groupId} .radio-pill.selected`);
   return sel ? sel.textContent.trim() : '';
+}
+
+function getTopObjection() {
+  const selected = getRadioValue('objectionGroup');
+  if (!selected) return '';
+  if (selected === 'Other') {
+    const other = val('objectionOther');
+    return other ? 'Other: ' + other : 'Other';
+  }
+  return selected;
 }
 
 function val(id) { return (document.getElementById(id) || {}).value?.trim() || ''; }
@@ -754,10 +904,14 @@ function next(from) {
     if (getTagValues('platformTags').length === 0) { alert('Please select at least one platform.'); return; }
   }
   if (from === 3) {
-    if (!selectedAesthetic && !val('aestheticCustom')) { alert('Please select a design aesthetic or describe your own.'); return; }
+    if (!val('marketArea')) { alert('Please enter your market area.'); return; }
   }
   if (from === 4) {
+    if (!selectedAesthetic && !val('aestheticCustom')) { alert('Please select a design aesthetic or describe your own.'); return; }
+  }
+  if (from === 5) {
     if (!val('promote')) { alert('Please tell us what you want to promote on social media.'); return; }
+    if (!val('differentiator')) { alert('Please tell us what makes you different from other agents.'); return; }
     buildReview();
   }
   currentStep = from + 1;
@@ -794,33 +948,50 @@ function buildReview() {
   const fonts = allTags.filter(t => t.includes('Serif') || t.includes('Sans') || t.includes('Script') || t.includes('display') || t.includes('Mixed'));
 
   brief = {
-    clientName: val('clientName'),
-    industry: val('industry'),
-    website: val('website'),
-    handle: val('handle'),
-    clientEmail: val('clientEmail'),
-    logo: logoDataUrl ? '[File uploaded]' : '',
-    logoData: logoDataUrl || '',
-    assets: val('assets'),
-    brandWords: val('brandWords'),
-    targetAudience: val('audience'),
-    toneOfVoice: tones,
+    // Existing fields
+    clientName:      val('clientName'),
+    industry:        val('industry'),
+    website:         val('website'),
+    handle:          val('handle'),
+    clientEmail:     val('clientEmail'),
+    logo:            logoDataUrl ? '[File uploaded]' : '',
+    logoData:        logoDataUrl || '',
+    assets:          val('assets'),
+    brandWords:      val('brandWords'),
+    targetAudience:  val('audience'),
+    toneOfVoice:     tones,
     contentLanguage: getRadioValue('langGroup'),
     goals,
     platforms,
     designAesthetic: selectedAesthetic,
     aestheticCustom: val('aestheticCustom'),
-    colors: allColors,
-    fontStyle: fonts,
-    promote: val('promote'),
-    competitors: val('competitors'),
-    dosAndDonts: val('donts'),
-    assetLinks: val('existingAssets'),
+    colors:          allColors,
+    fontStyle:       fonts,
+    promote:         val('promote'),
+    competitors:     val('competitors'),
+    dosAndDonts:     val('donts'),
+    assetLinks:      val('existingAssets'),
+
+    // New real estate profile fields (snake_case for n8n)
+    re_specialty:      getTagValues('reSpecialtyTags'),
+    client_focus:      getTagValues('clientFocusTags'),
+    market_tier:       getRadioValue('marketTierGroup'),
+    market_area:       val('marketArea'),
+    experience_level:  getRadioValue('experienceGroup'),
+    team_structure:    getRadioValue('teamGroup'),
+
+    // New content direction fields (snake_case for n8n)
+    differentiator:    val('differentiator'),
+    top_objection:     getTopObjection(),
+    positioning_goal:  val('positioningGoal'),
+    camera_comfort:    getRadioValue('cameraGroup'),
+    content_resources: getTagValues('resourcesTags'),
+    personal_hook:     val('personalHook'),
   };
 
   const slug = brief.clientName.toLowerCase().replace(/\s+/g,'-');
   document.getElementById('pipeChannel').textContent = `#client-${slug}`;
-  document.getElementById('pipeAesthetic').textContent = brief.aesthetic || 'Custom direction';
+  document.getElementById('pipeAesthetic').textContent = brief.designAesthetic || brief.aestheticCustom || 'Custom direction';
   document.getElementById('pipePlatforms').textContent = brief.platforms.length ? `For: ${brief.platforms.join(', ')}` : 'Instagram format';
 
   const colorsHtml = (brief.colors||[]).length
@@ -828,21 +999,33 @@ function buildReview() {
     : '—';
 
   const rows = [
-    ['Client',    brief.clientName],
-    ['Industry',  brief.industry  || '—'],
-    ['Website',   brief.website   || '—'],
-    ['Handle',    brief.handle    || '—'],
-    ['Brand words', brief.brandWords || '—'],
-    ['Audience',  brief.targetAudience  || '—'],
-    ['Tone',      (brief.toneOfVoice  || []).join(', ') || '—'],
-    ['Language',  brief.contentLanguage || '—'],
-    ['Goals',     (brief.goals     || []).join(', ') || '—'],
-    ['Platforms', (brief.platforms || []).join(', ') || '—'],
-    ['Aesthetic', (brief.designAesthetic || '') + (brief.aestheticCustom ? ' — ' + brief.aestheticCustom : '') || '—'],
-    ['Colors',    colorsHtml],
-    ['Fonts',     (brief.fontStyle || []).join(', ') || '—'],
-    ['Promoting', brief.promote   || '—'],
-    ['Compliance', brief.dosAndDonts || '—'],
+    ['Client',           brief.clientName],
+    ['Industry',         brief.industry   || '—'],
+    ['Website',          brief.website    || '—'],
+    ['Handle',           brief.handle     || '—'],
+    ['Brand words',      brief.brandWords || '—'],
+    ['Audience',         brief.targetAudience || '—'],
+    ['Tone',             (brief.toneOfVoice || []).join(', ') || '—'],
+    ['Language',         brief.contentLanguage || '—'],
+    ['Goals',            (brief.goals     || []).join(', ') || '—'],
+    ['Platforms',        (brief.platforms || []).join(', ') || '—'],
+    ['RE Specialty',     (brief.re_specialty || []).join(', ') || '—'],
+    ['Client focus',     (brief.client_focus || []).join(', ') || '—'],
+    ['Market tier',      brief.market_tier || '—'],
+    ['Market area',      brief.market_area || '—'],
+    ['Experience',       brief.experience_level || '—'],
+    ['Team structure',   brief.team_structure || '—'],
+    ['Aesthetic',        (brief.designAesthetic || '') + (brief.aestheticCustom ? ' — ' + brief.aestheticCustom : '') || '—'],
+    ['Colors',           colorsHtml],
+    ['Fonts',            (brief.fontStyle || []).join(', ') || '—'],
+    ['Promoting',        brief.promote || '—'],
+    ['Differentiator',   brief.differentiator || '—'],
+    ['Top objection',    brief.top_objection || '—'],
+    ['Positioning goal', brief.positioning_goal || '—'],
+    ['Camera comfort',   brief.camera_comfort || '—'],
+    ['Resources',        (brief.content_resources || []).join(', ') || '—'],
+    ['Personal hook',    brief.personal_hook || '—'],
+    ['Compliance',       brief.dosAndDonts || '—'],
   ].filter(([, v]) => v && v !== '—');
 
   document.getElementById('reviewGrid').innerHTML = rows
@@ -880,10 +1063,22 @@ TONE OF VOICE: ${(brief.toneOfVoice||[]).join(', ')||'Not specified'}
 CONTENT LANGUAGE: ${brief.contentLanguage||'Not specified'}
 MAIN GOALS: ${(brief.goals||[]).join(', ')||'Not specified'}
 PLATFORMS: ${(brief.platforms||[]).join(', ')||'Not specified'}
+RE SPECIALTY: ${(brief.re_specialty||[]).join(', ')||'Not specified'}
+CLIENT FOCUS: ${(brief.client_focus||[]).join(', ')||'Not specified'}
+MARKET TIER: ${brief.market_tier||'Not specified'}
+MARKET AREA: ${brief.market_area||'Not specified'}
+EXPERIENCE LEVEL: ${brief.experience_level||'Not specified'}
+TEAM STRUCTURE: ${brief.team_structure||'Not specified'}
 DESIGN AESTHETIC: ${brief.designAesthetic||'Not specified'}${brief.aestheticCustom?' — '+brief.aestheticCustom:''}
 BRAND COLORS: ${(brief.colors||[]).join(', ')||'Not specified'}
 FONT PREFERENCE: ${(brief.fontStyle||[]).join(', ')||'Not specified'}
 PROMOTING: ${brief.promote||'Not specified'}
+DIFFERENTIATOR: ${brief.differentiator||'Not specified'}
+TOP OBJECTION: ${brief.top_objection||'Not specified'}
+POSITIONING GOAL: ${brief.positioning_goal||'Not specified'}
+CAMERA COMFORT: ${brief.camera_comfort||'Not specified'}
+CONTENT RESOURCES: ${(brief.content_resources||[]).join(', ')||'Not specified'}
+PERSONAL HOOK: ${brief.personal_hook||'Not specified'}
 COMPETITORS/INSPIRATION: ${brief.competitors||'Not specified'}
 DOS AND DONTS: ${brief.dosAndDonts||'Not specified'}
 
@@ -939,10 +1134,9 @@ STEPS TO EXECUTE IN ORDER:
     logIds.forEach(id => setLog(id, 'error'));
     alert('Something went wrong. Please try again or contact us directly.');
     document.getElementById('launchBtn').disabled = false;
-    showStep(5);
+    showStep(6);
   }
 }
 </script>
 </body>
 </html>
-
