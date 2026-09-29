@@ -1167,7 +1167,7 @@ STEPS TO EXECUTE IN ORDER:
   try {
     // Run n8n workflow + add client to content calendar in parallel
     const [res] = await Promise.all([
-      fetch('https://marketingverse.app.n8n.cloud/webhook/c134ad6f-6c22-4a98-8f41-53b771b96d93', {
+      fetch('https://lvzuqeugqdevgbeendrz.supabase.co/functions/v1/creative-brief-onboarding', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ prompt, brief })
