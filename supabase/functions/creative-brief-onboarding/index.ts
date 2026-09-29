@@ -499,6 +499,139 @@ async function syncGHLContact(brief: any): Promise<void> {
   console.log(`[GHL] Created contact ${contactId}`);
 }
 
+// ─── Google Drive helpers ─────────────────────────────────────────────────────
+async function getGoogleAccessToken(): Promise<string> {
+  const raw = Deno.env.get("GOOGLE_SERVICE_ACCOUNT_JSON");
+  if (!raw) throw new Error("GOOGLE_SERVICE_ACCOUNT_JSON not set");
+
+  const sa = JSON.parse(raw);
+  const now = Math.floor(Date.now() / 1000);
+
+  const b64url = (obj: object) =>
+    btoa(JSON.stringify(obj)).replace(/=/g, "").replace(/\+/g, "-").replace(/\//g, "_");
+
+  const header = b64url({ alg: "RS256", typ: "JWT" });
+  const claim = b64url({
+    iss: sa.client_email,
+    scope: "https://www.googleapis.com/auth/drive",
+    aud: "https://oauth2.googleapis.com/token",
+    exp: now + 3600,
+    iat: now,
+  });
+
+  const signingInput = `${header}.${claim}`;
+
+  const pemBody = sa.private_key
+    .replace(/-----BEGIN PRIVATE KEY-----\n?/, "")
+    .replace(/\n?-----END PRIVATE KEY-----/, "")
+    .replace(/\n/g, "");
+
+  const keyBuffer = Uint8Array.from(atob(pemBody), (c) => c.charCodeAt(0));
+
+  const cryptoKey = await crypto.subtle.importKey(
+    "pkcs8",
+    keyBuffer,
+    { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" },
+    false,
+    ["sign"]
+  );
+
+  const sigBytes = await crypto.subtle.sign(
+    "RSASSA-PKCS1-v1_5",
+    cryptoKey,
+    new TextEncoder().encode(signingInput)
+  );
+
+  const sig = btoa(String.fromCharCode(...new Uint8Array(sigBytes)))
+    .replace(/=/g, "").replace(/\+/g, "-").replace(/\//g, "_");
+
+  const jwt = `${signingInput}.${sig}`;
+
+  const tokenResp = await fetch("https://oauth2.googleapis.com/token", {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({
+      grant_type: "urn:ietf:params:oauth:grant-type:jwt-bearer",
+      assertion: jwt,
+    }),
+  });
+
+  const tokenData = await tokenResp.json();
+  if (!tokenData.access_token) {
+    throw new Error(`Google token exchange failed: ${JSON.stringify(tokenData)}`);
+  }
+  return tokenData.access_token as string;
+}
+
+async function createDriveFolder(name: string, parentId: string, token: string): Promise<string> {
+  const resp = await fetch("https://www.googleapis.com/drive/v3/files", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+    body: JSON.stringify({
+      name,
+      mimeType: "application/vnd.google-apps.folder",
+      parents: [parentId],
+    }),
+  });
+  const data = await resp.json();
+  if (!data.id) throw new Error(`Drive folder creation failed: ${JSON.stringify(data)}`);
+  return data.id as string;
+}
+
+async function saveBrandCanvasToDrive(
+  clientName: string,
+  brandCanvas: string
+): Promise<{ folderUrl: string } | null> {
+  const clientsFolderId = Deno.env.get("GOOGLE_DRIVE_CLIENTS_FOLDER_ID");
+  if (!clientsFolderId) {
+    console.warn("[Drive] GOOGLE_DRIVE_CLIENTS_FOLDER_ID not set — skipping");
+    return null;
+  }
+
+  const token = await getGoogleAccessToken();
+
+  const folderId = await createDriveFolder(clientName, clientsFolderId, token);
+  console.log(`[Drive] Created folder "${clientName}" → ${folderId}`);
+
+  const boundary = "mv_brand_canvas_boundary";
+  const metadata = JSON.stringify({
+    name: `Brand Canvas — ${clientName}`,
+    mimeType: "application/vnd.google-apps.document",
+    parents: [folderId],
+  });
+
+  const multipartBody = [
+    `--${boundary}`,
+    "Content-Type: application/json; charset=UTF-8",
+    "",
+    metadata,
+    `--${boundary}`,
+    "Content-Type: text/plain; charset=UTF-8",
+    "",
+    brandCanvas,
+    `--${boundary}--`,
+  ].join("\r\n");
+
+  const uploadResp = await fetch(
+    "https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart",
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": `multipart/related; boundary=${boundary}`,
+      },
+      body: multipartBody,
+    }
+  );
+
+  const uploadData = await uploadResp.json();
+  if (!uploadData.id) throw new Error(`Drive file upload failed: ${JSON.stringify(uploadData)}`);
+
+  const folderUrl = `https://drive.google.com/drive/folders/${folderId}`;
+  console.log(`[Drive] Brand canvas saved → file ${uploadData.id}, folder: ${folderUrl}`);
+  return { folderUrl };
+}
+
 // ─── Meta onboarding steps message ────────────────────────────────────────────
 function buildMetaOnboardingMessage(clientName: string): string {
   return `*📣 Meta Business Suite — Onboarding Checklist for ${clientName}*
@@ -582,9 +715,20 @@ async function processOnboarding(brief: any, supabase: any): Promise<void> {
     brandCanvas = `⚠️ Brand canvas generation failed. Please regenerate manually.\n\nError: ${err}`;
   }
 
+  // 5.5. Save brand canvas to Google Drive
+  let driveFolderUrl: string | null = null;
+  if (brandCanvas) {
+    try {
+      const driveResult = await saveBrandCanvasToDrive(clientName, brandCanvas);
+      driveFolderUrl = driveResult?.folderUrl ?? null;
+    } catch (err) {
+      console.error("[Drive] Error:", err);
+    }
+  }
+
   // 6. Post brand canvas to client channel
   if (slackChannelId && brandCanvas) {
-    const header = `*📋 Brand Canvas — ${clientName}*\n_Generated by Marketingverse AI_\n\n`;
+    const header = `*📋 Brand Canvas — ${clientName}*\n_Generated by Marketingverse AI_${driveFolderUrl ? `\n📁 <${driveFolderUrl}|Open in Google Drive>` : ""}\n\n`;
     await slackPostChunked(slackChannelId, header + brandCanvas, token);
   }
 
@@ -600,7 +744,7 @@ async function processOnboarding(brief: any, supabase: any): Promise<void> {
 • Handle: ${brief.handle || "—"}
 • Platforms: ${arr(brief.platforms)}
 • Aesthetic: ${str(brief.designAesthetic)}
-• Slack: ${slackChannelId ? `<#${slackChannelId}>` : channelName}
+• Slack: ${slackChannelId ? `<#${slackChannelId}>` : channelName}${driveFolderUrl ? `\n• Drive: ${driveFolderUrl}` : ""}
 
 Brand canvas posted in their channel ↑`;
 
