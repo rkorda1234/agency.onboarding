@@ -411,6 +411,7 @@ async function createSlackCanvas(
     },
     body: JSON.stringify({
       channel_id: channelId,
+      title: `Brand Canvas — ${clientName}`,
       document_content: {
         type: "markdown",
         markdown: header + brandCanvas,
@@ -1036,9 +1037,6 @@ async function processOnboarding(brief: any, supabase: any): Promise<void> {
 
   if (fulfillmentChannelId) {
     await slackPost(fulfillmentChannelId, summaryText, token);
-  }
-  if (contentChannelId && contentChannelId !== fulfillmentChannelId) {
-    await slackPost(contentChannelId, summaryText, token);
   }
 
   // 9. GHL contact sync
