@@ -44,23 +44,40 @@ interface SupabaseUpsertResult {
   action: "inserted" | "updated";
 }
 
-// ─── Utility: slugify ─────────────────────────────────────────────────────────
-/**
- * Converts an arbitrary string into a Slack-safe channel name segment.
- * Slack channel names: lowercase a-z, 0-9, hyphens, max 80 chars total.
- * We reserve 7 chars for the "client-" prefix, so the slug max is 73.
- */
+// ─── Utility: slugify (for DB handle) ────────────────────────────────────────
 function slugify(name: string): string {
   return name
     .toLowerCase()
     .normalize("NFD")
-    .replace(/[̀-ͯ]/g, "") // strip diacritics
-    .replace(/[^a-z0-9\s-]/g, "")   // remove non-alphanumeric/space/hyphen
+    .replace(/[̀-ͯ]/g, "")
+    .replace(/[^a-z0-9\s-]/g, "")
     .trim()
-    .replace(/[\s_]+/g, "-")         // spaces → hyphens
-    .replace(/-+/g, "-")             // collapse repeated hyphens
-    .replace(/^-|-$/g, "")           // trim leading/trailing hyphens
-    .substring(0, 73);               // "client-" prefix = 7 chars; 73+7=80
+    .replace(/[\s_]+/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "")
+    .substring(0, 73);
+}
+
+// ─── Utility: build Slack channel name ───────────────────────────────────────
+/**
+ * Produces `client-firstName_lastName` matching n8n convention.
+ * Each name part is lowercased, diacritics stripped, non-alphanumeric chars
+ * removed (spaces in multi-word last names become hyphens).
+ * Total length capped at 80 chars (Slack limit).
+ */
+function buildChannelName(fullName: string): string {
+  const { firstName, lastName } = parseName(fullName);
+  const cleanPart = (s: string) =>
+    s.toLowerCase()
+      .normalize("NFD")
+      .replace(/[̀-ͯ]/g, "")   // strip diacritics
+      .replace(/[^a-z0-9-]/g, "")        // keep only a-z, 0-9, hyphens
+      .replace(/-+/g, "-")
+      .replace(/^-|-$/g, "");
+  const first = cleanPart(firstName);
+  const last = cleanPart(lastName.replace(/\s+/g, "-")); // multi-word → hyphens
+  const slug = last ? `${first}_${last}` : first;
+  return `client-${slug}`.substring(0, 80);
 }
 
 // ─── Utility: parse first / last name ─────────────────────────────────────────
@@ -117,9 +134,11 @@ function extractClientData(body: Record<string, any>): ExtractedClient {
     null;
 
   const plan: string | null =
-    planObj?.plan_code?.trim() ||
     planObj?.name?.trim() ||
+    planObj?.plan_code?.trim() ||
+    sub?.plan_name?.trim() ||
     sub?.plan_code?.trim() ||
+    body.plan_name?.trim() ||
     body.plan_code?.trim() ||
     null;
 
@@ -139,7 +158,7 @@ async function ensureSlackChannel(
       Authorization: `Bearer ${token}`,
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({ name: channelName, is_private: false }),
+    body: JSON.stringify({ name: channelName, is_private: true }),
   });
 
   if (!createResp.ok) {
@@ -176,7 +195,9 @@ async function ensureSlackChannel(
   throw new Error(`Slack conversations.create failed: ${createData.error}`);
 }
 
-// Paginate conversations.list to find a channel by exact name
+// Paginate conversations.list to find a channel by exact name.
+// Includes archived channels so a previously-archived test channel
+// can be found and unarchived rather than failing with name_taken.
 async function findSlackChannelByName(
   name: string,
   token: string
@@ -185,8 +206,8 @@ async function findSlackChannelByName(
 
   do {
     const params = new URLSearchParams({
-      types: "public_channel",
-      exclude_archived: "true",
+      types: "private_channel",
+      exclude_archived: "false",
       limit: "200",
     });
     if (cursor) params.set("cursor", cursor);
@@ -208,7 +229,21 @@ async function findSlackChannelByName(
     }
 
     for (const channel of data.channels ?? []) {
-      if (channel.name === name) return channel.id as string;
+      if (channel.name === name) {
+        if (channel.is_archived) {
+          console.log(`[Slack] Channel "${name}" is archived — unarchiving...`);
+          const unarchResp = await fetch(`${SLACK_API}/conversations.unarchive`, {
+            method: "POST",
+            headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+            body: JSON.stringify({ channel: channel.id }),
+          });
+          const unarchData = await unarchResp.json();
+          if (!unarchData.ok && unarchData.error !== "not_archived") {
+            console.warn(`[Slack] Unarchive warning: ${unarchData.error}`);
+          }
+        }
+        return channel.id as string;
+      }
     }
 
     cursor = (data.response_metadata?.next_cursor as string | undefined) || undefined;
@@ -413,6 +448,8 @@ async function upsertClient(params: {
 async function syncGHLContact(params: {
   clientName: string;
   clientEmail: string;
+  plan: string | null;
+  opportunityValue: string | null;
 }): Promise<GHLResult> {
   const apiKey = requireEnv("GHL_API_KEY");
   const locationId = requireEnv("GHL_LOCATION_ID");
@@ -423,102 +460,92 @@ async function syncGHLContact(params: {
     Version: "2021-07-28",
   };
 
-  // ── Search for existing contact by email ──
-  const searchUrl =
-    `${GHL_API_BASE}/contacts/?` +
-    new URLSearchParams({
-      locationId,
-      email: params.clientEmail,
-      limit: "1",
-    }).toString();
+  // Build tags: always "mverse - client" + plan name if available
+  const tags = [GHL_CLIENT_TAG];
+  if (params.plan) tags.push(params.plan);
 
-  const searchResp = await fetch(searchUrl, { headers });
+  // Build custom fields
+  const customFields = params.opportunityValue
+    ? [{ key: "opportunity_value", field_value: params.opportunityValue }]
+    : [];
 
-  if (!searchResp.ok) {
-    const errText = await searchResp.text();
-    throw new Error(
-      `GHL contact search HTTP ${searchResp.status}: ${errText}`
-    );
+  // ── Search for existing contact by email, fallback to phone ──
+  // GHL v2 API uses `query` for text search — `email` as a direct param is rejected (422).
+  let contactId: string | null = null;
+  for (const value of [params.clientEmail, (params as any).clientPhone as string | undefined]) {
+    if (!value) continue;
+    const searchUrl =
+      `${GHL_API_BASE}/contacts/?` +
+      new URLSearchParams({ locationId, query: value, limit: "1" }).toString();
+    const searchResp = await fetch(searchUrl, { headers });
+    if (!searchResp.ok) {
+      throw new Error(`GHL contact search HTTP ${searchResp.status}: ${await searchResp.text()}`);
+    }
+    const searchData = await searchResp.json();
+    const contacts: any[] = searchData.contacts ?? searchData.data?.contacts ?? [];
+    if (contacts.length > 0) {
+      contactId = contacts[0].id as string;
+      console.log(`[GHL] Found existing contact: ${contactId}`);
+      break;
+    }
   }
 
-  const searchData = await searchResp.json();
+  if (contactId) {
+    console.log(`[GHL] Updating contact ${contactId} — tags + custom fields...`);
 
-  // GHL can return contacts at .contacts or .data.contacts depending on version
-  const contacts: any[] =
-    searchData.contacts ??
-    searchData.data?.contacts ??
-    [];
-
-  if (contacts.length > 0) {
-    const contactId: string = contacts[0].id;
-    console.log(
-      `[GHL] Found existing contact ${contactId} for ${params.clientEmail}, adding tag...`
-    );
-
-    // Use the /tags endpoint to avoid "invalid identifier" errors from PUT update
-    const tagResp = await fetch(`${GHL_API_BASE}/contacts/${contactId}/tags`, {
+    // Add tags non-destructively
+    await fetch(`${GHL_API_BASE}/contacts/${contactId}/tags`, {
       method: "POST",
       headers,
-      body: JSON.stringify({ tags: [GHL_CLIENT_TAG] }),
+      body: JSON.stringify({ tags }),
     });
 
-    if (!tagResp.ok) {
-      const errText = await tagResp.text();
-      throw new Error(
-        `GHL add tags HTTP ${tagResp.status}: ${errText}`
-      );
-    }
+    // Update name + custom fields via PUT
+    const { firstName, lastName } = parseName(params.clientName);
+    const updateBody: Record<string, unknown> = { firstName, lastName };
+    if (customFields.length > 0) updateBody.customFields = customFields;
+    await fetch(`${GHL_API_BASE}/contacts/${contactId}`, {
+      method: "PUT",
+      headers,
+      body: JSON.stringify(updateBody),
+    });
 
-    const tagData = await tagResp.json();
-    console.log(
-      `[GHL] Added tag "${GHL_CLIENT_TAG}" to contact ${contactId}`,
-      tagData
-    );
-
+    console.log(`[GHL] Updated contact ${contactId} — tags: ${tags.join(", ")}`);
     return { action: "tags_added", contactId };
   }
 
   // ── Create new contact ──
   const { firstName, lastName } = parseName(params.clientName);
 
+  const createBody: Record<string, unknown> = {
+    locationId,
+    email: params.clientEmail,
+    firstName,
+    lastName,
+    tags,
+    source: "Zoho Billing",
+  };
+  if (customFields.length > 0) createBody.customFields = customFields;
+
   const createResp = await fetch(`${GHL_API_BASE}/contacts/`, {
     method: "POST",
     headers,
-    body: JSON.stringify({
-      locationId,
-      email: params.clientEmail,
-      firstName,
-      lastName,
-      tags: [GHL_CLIENT_TAG],
-      source: "Zoho Billing",
-    }),
+    body: JSON.stringify(createBody),
   });
 
   if (!createResp.ok) {
-    const errText = await createResp.text();
-    throw new Error(
-      `GHL create contact HTTP ${createResp.status}: ${errText}`
-    );
+    throw new Error(`GHL create contact HTTP ${createResp.status}: ${await createResp.text()}`);
   }
 
   const createData = await createResp.json();
+  const createdId: string | undefined = createData.contact?.id ?? createData.id ?? undefined;
 
-  // GHL wraps the contact under .contact in v2021-07-28
-  const contactId: string | undefined =
-    createData.contact?.id ??
-    createData.id ??
-    undefined;
-
-  if (!contactId) {
-    throw new Error(
-      `GHL create contact: no id in response: ${JSON.stringify(createData)}`
-    );
+  if (!createdId) {
+    throw new Error(`GHL create contact: no id in response: ${JSON.stringify(createData)}`);
   }
 
-  console.log(
-    `[GHL] Created new contact ${contactId} for ${params.clientEmail}`
-  );
-  return { action: "created", contactId };
+  console.log(`[GHL] Created contact ${createdId} — tags: ${tags.join(", ")}`);
+  return { action: "created", contactId: createdId };
 }
 
 // ─── Main handler ──────────────────────────────────────────────────────────────
@@ -556,6 +583,10 @@ Deno.serve(async (req: Request): Promise<Response> => {
 
   // ── Extract client data ──
   const { clientName, clientEmail, plan } = extractClientData(body);
+  const opportunityValue: string | null =
+    body.subscription?.line_items?.[0]?.item_total?.toString() ??
+    body.data?.subscription?.line_items?.[0]?.item_total?.toString() ??
+    null;
 
   if (!clientName || !clientEmail) {
     console.error(
@@ -587,8 +618,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
   };
 
   // ── Step 1 + 2: Slack channel ──
-  const slug = slugify(clientName);
-  const channelName = `client-${slug}`;
+  const channelName = buildChannelName(clientName);
   let slackChannelId: string | null = null;
 
   try {
@@ -622,7 +652,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
     const supabaseResult = await upsertClient({
       clientName,
       clientEmail,
-      handle: slug,
+      handle: slugify(clientName),
       slackChannelId,
       plan,
     });
@@ -637,7 +667,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
 
   // ── Step 5: GHL contact sync ──
   try {
-    const ghlResult = await syncGHLContact({ clientName, clientEmail });
+    const ghlResult = await syncGHLContact({ clientName, clientEmail, plan, opportunityValue });
     result.ghlAction = ghlResult.action;
     result.ghlContactId = ghlResult.contactId;
   } catch (err) {
@@ -645,6 +675,27 @@ Deno.serve(async (req: Request): Promise<Response> => {
     console.error(`[${requestId}] GHL error: ${msg}`);
     result.ghlError = msg;
     result.ok = false;
+  }
+
+  // ── Step 6: Notify team in fulfillment channel ──
+  const fulfillmentChannelId = Deno.env.get("SLACK_FULFILLMENT_CHANNEL_ID") || "";
+  if (fulfillmentChannelId) {
+    try {
+      const token = requireEnv("SLACK_BOT_TOKEN");
+      const notifyText = `*🆕 New subscription: ${clientName}*
+• Email: ${clientEmail}
+• Plan: ${plan || "—"}${opportunityValue ? `\n• Value: $${opportunityValue}` : ""}
+• Slack: ${slackChannelId ? `<#${slackChannelId}>` : channelName}
+• GHL: ${result.ghlContactId ? `Contact created/updated ✓` : "See logs"}`;
+      await fetch(`${SLACK_API}/chat.postMessage`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ channel: fulfillmentChannelId, text: notifyText, mrkdwn: true }),
+      });
+      result.slackNotifyOk = true;
+    } catch (err) {
+      console.error(`[${requestId}] Slack notify error:`, err);
+    }
   }
 
   console.log(`[${requestId}] Done:`, JSON.stringify(result, null, 2));
