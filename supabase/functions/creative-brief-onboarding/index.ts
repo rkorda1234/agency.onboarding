@@ -885,31 +885,13 @@ async function saveBrandCanvasToDrive(
   return { folderUrl };
 }
 
-// ─── Meta onboarding steps message ────────────────────────────────────────────
-function buildMetaOnboardingMessage(clientName: string): string {
-  return `*📣 Meta Business Suite — Onboarding Checklist for ${clientName}*
+// ─── Next step message ────────────────────────────────────────────────────────
+function buildNextStepMessage(clientName: string): string {
+  return `*👋 Welcome, ${clientName}!*
 
-Complete these steps to connect your social accounts to our system:
+Your brand canvas is ready above. Your next step is to schedule your Onboarding Zoom Meeting with the team so we can connect and configure your accounts:
 
-*1. Meta Business Suite*
-→ Go to business.facebook.com → Create or claim your Business account
-→ Add your Facebook Page and Instagram account under Assets
-
-*2. Add Marketingverse as a Partner*
-→ Business Settings → Partners → Add Partner
-→ Partner ID: *(your team will send this separately)*
-→ Grant access to: Pages, Instagram accounts, Ad accounts
-
-*3. Facebook Page Access*
-→ Business Settings → Accounts → Pages → Add → Claim existing Page
-→ Set Marketingverse role: Content Creator or Admin
-
-*4. Instagram Professional Account*
-→ Confirm Instagram is converted to a Professional (Business or Creator) account
-→ Connect to your Facebook Page (required for scheduling)
-
-*5. Confirm access is live*
-→ Reply here once steps 1-4 are done — your team will verify and activate your content calendar`;
+📅 *<https://api.leadconnectorhq.com/widget/bookings/the-marketingverse/onboarding-meeting|Book your onboarding call here>*`;
 }
 
 // ─── Main background processor ────────────────────────────────────────────────
@@ -1032,9 +1014,9 @@ async function processOnboarding(brief: any, supabase: any): Promise<void> {
     }
   }
 
-  // 7. Post Meta onboarding steps to client channel
+  // 7. Post next step (onboarding call booking) to client channel
   if (slackChannelId) {
-    await slackPost(slackChannelId, buildMetaOnboardingMessage(clientName), token);
+    await slackPost(slackChannelId, buildNextStepMessage(clientName), token);
   }
 
   // 8. Post summary to fulfillment + content channels
