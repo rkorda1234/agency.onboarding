@@ -695,7 +695,9 @@ async function createCanvaDesign(clientName: string, supabase: any): Promise<str
   });
 
   const data = await resp.json();
-  const editUrl = data.design?.urls?.edit_url ?? null;
+  // urls.edit_url from the API is a temporary link (expires ~30 days); build the
+  // permanent one from the design ID instead.
+  const editUrl = data.design?.id ? `https://www.canva.com/design/${data.design.id}/edit` : null;
   if (!editUrl) {
     console.error("[Canva] Failed to get edit URL:", JSON.stringify(data));
     return null;
