@@ -886,6 +886,44 @@ async function saveBrandCanvasToDrive(
   return { folderUrl };
 }
 
+// ─── Brand canvas parser ────────────────────────────────────────────────────────────────────────
+function extractSection(canvas: string, sectionNum: string): string | null {
+  const lines = canvas.split("\n");
+  let inSection = false;
+  const content: string[] = [];
+  for (const line of lines) {
+    if (line.startsWith("## ") && line.includes(sectionNum)) {
+      inSection = true;
+      continue;
+    }
+    if (inSection && line.startsWith("## ")) break;
+    if (inSection) content.push(line);
+  }
+  return content.join("\n").trim() || null;
+}
+
+function parseBrandCanvas(canvas: string): {
+  bio: string | null;
+  accentColor: string | null;
+  contentGuidelines: string | null;
+} {
+  // bio: first paragraph of Brand Overview section
+  const overview = extractSection(canvas, "01");
+  const bio = overview ? overview.split(/\n\n/)[0].replace(/\*+/g, "").trim() : null;
+
+  // accent_color: first hex code found in Color Palette section
+  const palette = extractSection(canvas, "06");
+  const hexMatch = palette?.match(/#[0-9A-Fa-f]{6}\b/);
+  const accentColor = hexMatch ? hexMatch[0] : null;
+
+  // content_guidelines: Tone of Voice + Dos & Don'ts combined
+  const tone = extractSection(canvas, "03");
+  const dosDonts = extractSection(canvas, "08");
+  const contentGuidelines = [tone, dosDonts].filter(Boolean).join("\n\n---\n\n") || null;
+
+  return { bio, accentColor, contentGuidelines };
+}
+
 // ─── Next step message ────────────────────────────────────────────────────────
 function buildNextStepMessage(clientName: string): string {
   return `*👋 Welcome, ${clientName}!*
@@ -997,6 +1035,23 @@ async function processOnboarding(brief: any, supabase: any): Promise<void> {
     }
   }
 
+  // 5.7. Parse brand canvas and save fields to client record
+  if (brandCanvas && clientId) {
+    try {
+      const { bio, accentColor, contentGuidelines } = parseBrandCanvas(brandCanvas);
+      const brandUpdate: Record<string, unknown> = {};
+      if (bio) brandUpdate.bio = bio;
+      if (accentColor) brandUpdate.accent_color = accentColor;
+      if (contentGuidelines) brandUpdate.content_guidelines = contentGuidelines;
+      if (Object.keys(brandUpdate).length > 0) {
+        await supabase.from("clients").update(brandUpdate).eq("id", clientId);
+        console.log(`[Supabase] Brand fields saved: ${Object.keys(brandUpdate).join(", ")}`);
+      }
+    } catch (err) {
+      console.error("[Supabase] Brand fields save error:", err);
+    }
+  }
+
   // 6. Create Slack canvas with brand strategy (fallback to chunked messages)
   let canvasId: string | null = null;
   if (slackChannelId && brandCanvas) {
@@ -1020,7 +1075,7 @@ async function processOnboarding(brief: any, supabase: any): Promise<void> {
     await slackPost(slackChannelId, buildNextStepMessage(clientName), token);
   }
 
-  // 8. Post summary to fulfillment + content channels
+  // 8. Post summary to fulfillment channel only
   const summaryText = [
     `*🆕 New client onboarded: ${clientName}*`,
     `• Email: ${brief.clientEmail || "—"}`,
