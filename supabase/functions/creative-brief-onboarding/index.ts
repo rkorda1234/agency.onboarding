@@ -633,13 +633,21 @@ async function syncGHLContact(brief: any): Promise<void> {
 }
 
 // ─── Canva helpers ────────────────────────────────────────────────────────────
-async function getCanvaAccessToken(): Promise<string | null> {
+// Canva refresh tokens are single-use: each exchange returns a new one and reusing
+// an old one revokes the whole grant. The current token lives in integration_tokens
+// (written by canva-oauth-helper) and is replaced after every exchange.
+async function getCanvaAccessToken(supabase: any): Promise<string | null> {
   const clientId = Deno.env.get("CANVA_CLIENT_ID");
   const clientSecret = Deno.env.get("CANVA_CLIENT_SECRET");
-  const refreshToken = Deno.env.get("CANVA_REFRESH_TOKEN");
+  const { data: stored } = await supabase
+    .from("integration_tokens")
+    .select("refresh_token")
+    .eq("provider", "canva")
+    .maybeSingle();
+  const refreshToken = stored?.refresh_token;
 
   if (!clientId || !clientSecret || !refreshToken) {
-    console.warn("[Canva] CANVA_CLIENT_ID, CANVA_CLIENT_SECRET, or CANVA_REFRESH_TOKEN not set — skipping");
+    console.warn("[Canva] CANVA_CLIENT_ID/SECRET not set or Canva not connected (run canva-oauth-helper) — skipping");
     return null;
   }
 
@@ -661,11 +669,17 @@ async function getCanvaAccessToken(): Promise<string | null> {
     console.error("[Canva] Token exchange failed:", JSON.stringify(data));
     return null;
   }
+  if (data.refresh_token) {
+    const { error } = await supabase
+      .from("integration_tokens")
+      .upsert({ provider: "canva", refresh_token: data.refresh_token, updated_at: new Date().toISOString() });
+    if (error) console.error("[Canva] Failed to save rotated refresh token:", error);
+  }
   return data.access_token as string;
 }
 
-async function createCanvaDesign(clientName: string): Promise<string | null> {
-  const token = await getCanvaAccessToken();
+async function createCanvaDesign(clientName: string, supabase: any): Promise<string | null> {
+  const token = await getCanvaAccessToken(supabase);
   if (!token) return null;
 
   const resp = await fetch("https://api.canva.com/rest/v1/designs", {
@@ -1001,7 +1015,7 @@ async function processOnboarding(brief: any, supabase: any): Promise<void> {
   // 4.5. Create Canva design + save edit URL to client record
   let canvaEditUrl: string | null = null;
   try {
-    canvaEditUrl = await createCanvaDesign(clientName);
+    canvaEditUrl = await createCanvaDesign(clientName, supabase);
     if (canvaEditUrl && clientId) {
       await supabase
         .from("clients")

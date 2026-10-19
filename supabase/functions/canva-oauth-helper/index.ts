@@ -1,8 +1,9 @@
-// One-time Canva OAuth helper (PKCE flow) — get a refresh token without n8n
-// Delete this function after you've saved CANVA_REFRESH_TOKEN to Supabase secrets.
+// Canva OAuth helper (PKCE flow). Open it in a browser to (re)connect Canva; the
+// refresh token is saved to integration_tokens. Only deploy it while reconnecting.
 
 const CLIENT_ID = Deno.env.get("CANVA_CLIENT_ID") ?? "";
 const CLIENT_SECRET = Deno.env.get("CANVA_CLIENT_SECRET") ?? "";
+const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
 const REDIRECT_URI = `${Deno.env.get("SUPABASE_URL") ?? ""}/functions/v1/canva-oauth-helper`;
 
 async function generatePKCE(): Promise<{ verifier: string; challenge: string }> {
@@ -65,13 +66,28 @@ Deno.serve(async (req: Request): Promise<Response> => {
       `), { headers: { "Content-Type": "text/html; charset=utf-8" } });
     }
 
+    // Save straight to integration_tokens; creative-brief-onboarding rotates it from there.
+    const saveResp = await fetch(`${Deno.env.get("SUPABASE_URL")}/rest/v1/integration_tokens`, {
+      method: "POST",
+      headers: {
+        apikey: SERVICE_ROLE_KEY,
+        Authorization: `Bearer ${SERVICE_ROLE_KEY}`,
+        "Content-Type": "application/json",
+        Prefer: "resolution=merge-duplicates",
+      },
+      body: JSON.stringify({ provider: "canva", refresh_token: data.refresh_token, updated_at: new Date().toISOString() }),
+    });
+    if (!saveResp.ok) {
+      return new Response(html(`
+        <h2 style="color:#e74c3c">Connected to Canva, but saving failed</h2>
+        <pre>${await saveResp.text()}</pre>
+        <p><a href="${REDIRECT_URI}">Try again</a></p>
+      `), { headers: { "Content-Type": "text/html; charset=utf-8" } });
+    }
+
     return new Response(html(`
-      <h2 style="color:#27ae60">Got your Canva refresh token!</h2>
-      <p>Copy the value below and add it to <strong>Supabase &rarr; Project Settings &rarr; Edge Functions &rarr; Secrets</strong> as <code>CANVA_REFRESH_TOKEN</code>:</p>
-      <textarea readonly onclick="this.select()" style="width:100%;height:80px;font-family:monospace;font-size:13px;padding:8px;border:2px solid #27ae60;border-radius:4px;margin-top:8px;">${data.refresh_token}</textarea>
-      <p style="margin-top:24px;background:#fff3cd;padding:12px;border-radius:4px;font-size:14px;">
-        Once saved, <strong>delete the <code>canva-oauth-helper</code> edge function</strong> from the Supabase dashboard &mdash; it&rsquo;s a temporary helper.
-      </p>
+      <h2 style="color:#27ae60">Canva connected ✓</h2>
+      <p>New client briefs will create Canva designs again. You can close this tab.</p>
     `), {
       headers: {
         "Content-Type": "text/html; charset=utf-8",
