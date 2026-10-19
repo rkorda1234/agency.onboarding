@@ -1012,10 +1012,15 @@ async function processOnboarding(brief: any, supabase: any): Promise<void> {
     console.error("[Supabase] Client upsert error:", err);
   }
 
-  // 4.5. Create Canva design + save edit URL to client record
+  // 4.5. Create Canva design + save edit URL to client record (skip if one exists,
+  // e.g. the brief is resubmitted or the design was created by hand)
   let canvaEditUrl: string | null = null;
   try {
-    canvaEditUrl = await createCanvaDesign(clientName, supabase);
+    if (clientId) {
+      const { data } = await supabase.from("clients").select("canva_design_url").eq("id", clientId).maybeSingle();
+      canvaEditUrl = data?.canva_design_url ?? null;
+    }
+    if (!canvaEditUrl) canvaEditUrl = await createCanvaDesign(clientName, supabase);
     if (canvaEditUrl && clientId) {
       await supabase
         .from("clients")
