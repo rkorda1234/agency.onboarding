@@ -1051,8 +1051,6 @@ function buildReview() {
 
   const slug = brief.clientName.toLowerCase().replace(/\s+/g,'-');
   document.getElementById('pipeChannel').textContent = `#client-${slug}`;
-  document.getElementById('pipeAesthetic').textContent = brief.designAesthetic || brief.aestheticCustom || 'Custom direction';
-  document.getElementById('pipePlatforms').textContent = brief.platforms.length ? `For: ${brief.platforms.join(', ')}` : 'Instagram format';
 
   const colorsHtml = (brief.colors||[]).length
     ? brief.colors.map(c => `<span class="color-dot" style="background:${c}"></span>${c}`).join(' ')
