@@ -5,6 +5,7 @@
  * Receives the Yapping questionnaire (onboarding.the-marketingverse.com/yapping) and:
  *   1. Saves it to yapping_submissions (linked to the client by email when possible)
  *   2. Posts a summary to the internal fulfillment channel, with the full answers in the thread
+ *   3. Starts yapping-scripts, which writes the "<Client> - Yapping Scripts" Google Doc
  *
  * Deploy with:
  *   supabase functions deploy yapping-questionnaire --no-verify-jwt
@@ -52,12 +53,12 @@ function sectionText(section: any): string {
   return lines.join("\n").slice(0, SLACK_MAX_CHARS);
 }
 
-async function notifySlack(payload: any, clientId: string | null, slackChannelId: string | null): Promise<void> {
+async function notifySlack(payload: any, clientId: string | null, slackChannelId: string | null): Promise<string | null> {
   const token = Deno.env.get("SLACK_BOT_TOKEN") ?? "";
   const channel = Deno.env.get("SLACK_FULFILLMENT_CHANNEL_ID") ?? "";
   if (!token || !channel) {
     console.warn("[Slack] SLACK_BOT_TOKEN or SLACK_FULFILLMENT_CHANNEL_ID not set — skipping");
-    return;
+    return null;
   }
   const sections: any[] = payload.sections ?? [];
   const answered = sections.reduce((n, s) => n + (s.answers ?? []).filter((a: any) => a.answer).length, 0);
@@ -68,12 +69,13 @@ async function notifySlack(payload: any, clientId: string | null, slackChannelId
     `• Answered: ${answered} of ${total} questions`,
     slackChannelId ? `• Client channel: <#${slackChannelId}>` : clientId ? null : "• ⚠️ No client in Supabase matches this email",
     "",
-    "Full answers in the thread 👇",
+    "Full answers in the thread 👇 Scripts doc link will follow there.",
   ].filter((l) => l !== null).join("\n");
 
   const ts = await slackPost(channel, summary, token);
-  if (!ts) return;
+  if (!ts) return null;
   for (const s of sections) await slackPost(channel, sectionText(s), token, ts);
+  return ts;
 }
 
 Deno.serve(async (req: Request): Promise<Response> => {
@@ -103,19 +105,37 @@ Deno.serve(async (req: Request): Promise<Response> => {
     .eq("agency_id", AGENCY_ID)
     .maybeSingle();
 
-  const { error } = await supabase.from("yapping_submissions").insert({
+  const { data: saved, error } = await supabase.from("yapping_submissions").insert({
     client_id: client?.id ?? null,
     client_name: clientName,
     email: clientEmail,
     answers: payload.sections,
-  });
-  if (error) {
+  }).select("id").single();
+  if (error || !saved) {
     console.error("[Supabase] yapping_submissions insert error:", error);
     return json({ error: "Could not save answers" }, 500);
   }
 
-  // Slack notification runs after responding so the client isn't kept waiting
-  const task = notifySlack(payload, client?.id ?? null, client?.slack_channel_id ?? null).catch((e) => console.error("[Slack] error:", e));
+  // Slack + script generation run after responding so the client isn't kept waiting
+  const task = (async () => {
+    // Start the scripts first: they take minutes, and yapping-scripts answers 202 right away
+    try {
+      const resp = await fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/yapping-scripts`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ submission_id: saved.id }),
+      });
+      if (!resp.ok) console.error("[Scripts] start failed:", resp.status, await resp.text());
+    } catch (e) {
+      console.error("[Scripts] start error:", e);
+    }
+    try {
+      const ts = await notifySlack(payload, client?.id ?? null, client?.slack_channel_id ?? null);
+      if (ts) await supabase.from("yapping_submissions").update({ slack_thread_ts: ts }).eq("id", saved.id);
+    } catch (e) {
+      console.error("[Slack] error:", e);
+    }
+  })();
   // @ts-ignore — EdgeRuntime is Supabase's Deno runtime global
   if (typeof EdgeRuntime !== "undefined" && EdgeRuntime.waitUntil) EdgeRuntime.waitUntil(task);
 
