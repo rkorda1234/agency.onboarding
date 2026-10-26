@@ -5,7 +5,7 @@
  * Receives the Yapping questionnaire (onboarding.the-marketingverse.com/yapping) and:
  *   1. Saves it to yapping_submissions (linked to the client by email when possible)
  *   2. Posts a summary to the internal fulfillment channel, with the full answers in the thread
- *   3. Starts yapping-scripts, which writes the "<Client> - Yapping Scripts" Google Doc
+ *   3. Starts yapping-scripts, which shares the "<Client> - Yapping Scripts" Slack canvas
  *
  * Deploy with:
  *   supabase functions deploy yapping-questionnaire --no-verify-jwt

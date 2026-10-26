@@ -2,9 +2,10 @@
 /**
  * yapping-scripts
  *
- * Turns a Yapping questionnaire submission into talking-to-camera scripts and saves them
- * as the Google Doc "<Client Name> - Yapping Scripts" in the client's Drive folder, then
- * posts the link in the submission's Slack thread (fulfillment channel).
+ * Turns a Yapping questionnaire submission into talking-to-camera scripts and shares them as a
+ * Slack canvas "<Client Name> - Yapping Scripts" in the client's Slack channel (the client sees
+ * it), with a message in that channel and the link in the team's fulfillment thread. If the
+ * client has no Slack channel on file, the canvas goes to the fulfillment channel instead.
  *
  * Called by yapping-questionnaire with { submission_id }. Responds 202 immediately and does
  * the work in the background. Only submissions whose scripts_status is 'pending' or 'failed'
@@ -14,8 +15,7 @@
  * Deploy with:
  *   supabase functions deploy yapping-scripts --no-verify-jwt
  *
- * Secrets: ANTHROPIC_API_KEY, GOOGLE_SERVICE_ACCOUNT_JSON, GOOGLE_DRIVE_CLIENTS_FOLDER_ID,
- *          SLACK_BOT_TOKEN, SLACK_FULFILLMENT_CHANNEL_ID
+ * Secrets: ANTHROPIC_API_KEY, SLACK_BOT_TOKEN, SLACK_FULFILLMENT_CHANNEL_ID
  */
 
 import Anthropic from "npm:@anthropic-ai/sdk@1.1.0";
@@ -55,16 +55,18 @@ HARD RULES
 - Quality check each script: would a competitor post this hook word for word? Is there a real opinion, not just information? Is there a reason they believe it? Would the ideal viewer see themselves in it? Is it on one of their pillars? Cut any sentence that is hard to say out loud.
 
 OUTPUT (Markdown, nothing before or after)
-# {Client name} - Yapping Scripts
-One short paragraph: who these videos are for and the angle that runs through them.
+The client reads this document, so write it to them in plain language. Do not use internal terms like "lens", "Tema", "Moral", "Semilla" or "seed", and do not use tables.
 
-## Overview
-A table with columns: #, Concept, Lenses, Pillar.
+# {Client name} - Yapping Scripts
+One short paragraph to the client: what these videos are about and the angle that runs through them.
+
+## Your videos at a glance
+A numbered list: concept title, then the topic it belongs to.
 
 ## Scripts
-Write 8 scripts, spreading the lenses across the batch. For each:
+Write 8 scripts with a mix of hot takes, personal stories and "what your client is thinking" videos. For each:
 ### {n}. {Concept title}
-**Lenses:** ... | **Pillar:** ...
+**Topic:** ...
 **Hook options:**
 - A) ...
 - B) ...
@@ -72,15 +74,15 @@ Write 8 scripts, spreading the lenses across the batch. For each:
 **Script (word for word):**
 (the spoken script, in short paragraphs)
 **On-screen text:** 3-8 words
-**Delivery notes:** energy, where to pause, setting
-**Caption:** 2-4 lines ending with a comment-driving question
-**Needs from creator:** placeholders to fill, or "None"
+**How to film it:** energy, where to pause, setting
+**Caption:** 2-4 lines ending with a question that invites comments
+**What we need from you:** placeholders to fill, or "Nothing, ready to film"
 
 ## More hooks to film
-10 extra one-line hooks drawn from their answers, each tagged with its lens.
+10 extra one-line hooks drawn from their answers.
 
-## Questions for the creator
-The few follow-up questions that would unlock better scripts (only if their answers left real gaps).`;
+## A few questions for you
+The few follow-up questions that would make the next scripts even better (only if their answers left real gaps).`;
 
 function answersText(sections: any[]): string {
   return sections.map((s) => {
@@ -119,145 +121,88 @@ async function generateScripts(clientName: string, client: any, sections: any[])
   return text;
 }
 
-// ─── Google Drive ──────────────────────────────────────────────────────────────
-async function getGoogleAccessToken(): Promise<string> {
-  const raw = Deno.env.get("GOOGLE_SERVICE_ACCOUNT_JSON");
-  if (!raw) throw new Error("GOOGLE_SERVICE_ACCOUNT_JSON not set");
-  const sa = JSON.parse(raw);
-  const now = Math.floor(Date.now() / 1000);
-  const b64url = (obj: object) =>
-    btoa(JSON.stringify(obj)).replace(/=/g, "").replace(/\+/g, "-").replace(/\//g, "_");
-  const signingInput = `${b64url({ alg: "RS256", typ: "JWT" })}.${b64url({
-    iss: sa.client_email,
-    scope: "https://www.googleapis.com/auth/drive",
-    aud: "https://oauth2.googleapis.com/token",
-    exp: now + 3600,
-    iat: now,
-  })}`;
-  const pemBody = sa.private_key
-    .replace(/-----BEGIN PRIVATE KEY-----\n?/, "")
-    .replace(/\n?-----END PRIVATE KEY-----/, "")
-    .replace(/\n/g, "");
-  const key = await crypto.subtle.importKey(
-    "pkcs8",
-    Uint8Array.from(atob(pemBody), (c) => c.charCodeAt(0)),
-    { name: "RSASSA-PKCS1-v1_5", hash: "SHA-256" },
-    false,
-    ["sign"],
-  );
-  const sig = await crypto.subtle.sign("RSASSA-PKCS1-v1_5", key, new TextEncoder().encode(signingInput));
-  const jwt = `${signingInput}.${btoa(String.fromCharCode(...new Uint8Array(sig))).replace(/=/g, "").replace(/\+/g, "-").replace(/\//g, "_")}`;
-  const resp = await fetch("https://oauth2.googleapis.com/token", {
+// ─── Slack ─────────────────────────────────────────────────────────────────────
+async function slack(method: string, body: Record<string, unknown>): Promise<any> {
+  const resp = await fetch(`${SLACK_API}/${method}`, {
     method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: new URLSearchParams({ grant_type: "urn:ietf:params:oauth:grant-type:jwt-bearer", assertion: jwt }),
+    headers: { Authorization: `Bearer ${Deno.env.get("SLACK_BOT_TOKEN") ?? ""}`, "Content-Type": "application/json" },
+    body: JSON.stringify(body),
   });
-  const data = await resp.json();
-  if (!data.access_token) throw new Error(`Google token exchange failed: ${JSON.stringify(data)}`);
-  return data.access_token as string;
-}
-
-// The client's folder is the one creative-brief-onboarding created under the clients folder,
-// named after the client. Fall back to creating it if no folder with any of the names exists.
-async function findOrCreateClientFolder(names: string[], parentId: string, token: string): Promise<string> {
-  for (const name of names) {
-    const q = `'${parentId}' in parents and mimeType='application/vnd.google-apps.folder' and trashed=false and name='${name.replace(/\\/g, "\\\\").replace(/'/g, "\\'")}'`;
-    const resp = await fetch(
-      "https://www.googleapis.com/drive/v3/files?" +
-        new URLSearchParams({ q, fields: "files(id,name)", supportsAllDrives: "true", includeItemsFromAllDrives: "true" }),
-      { headers: { Authorization: `Bearer ${token}` } },
-    );
-    const data = await resp.json();
-    if (data.files?.length) return data.files[0].id as string;
-  }
-  const resp = await fetch("https://www.googleapis.com/drive/v3/files?supportsAllDrives=true", {
-    method: "POST",
-    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-    body: JSON.stringify({ name: names[0], mimeType: "application/vnd.google-apps.folder", parents: [parentId] }),
-  });
-  const data = await resp.json();
-  if (!data.id) throw new Error(`Drive folder creation failed: ${JSON.stringify(data)}`);
-  return data.id as string;
-}
-
-async function uploadDoc(name: string, content: string, folderId: string, token: string, contentType: string): Promise<any> {
-  const boundary = "mv_multipart_boundary";
-  const body = [
-    `--${boundary}`,
-    "Content-Type: application/json; charset=UTF-8",
-    "",
-    JSON.stringify({ name, mimeType: "application/vnd.google-apps.document", parents: [folderId] }),
-    `--${boundary}`,
-    `Content-Type: ${contentType}; charset=UTF-8`,
-    "",
-    content,
-    `--${boundary}--`,
-  ].join("\r\n");
-  const resp = await fetch(
-    "https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&supportsAllDrives=true&fields=id,webViewLink",
-    { method: "POST", headers: { Authorization: `Bearer ${token}`, "Content-Type": `multipart/related; boundary=${boundary}` }, body },
-  );
   return resp.json();
 }
 
-async function saveScriptsDoc(docName: string, folderNames: string[], markdown: string): Promise<string> {
-  const parentId = Deno.env.get("GOOGLE_DRIVE_CLIENTS_FOLDER_ID");
-  if (!parentId) throw new Error("GOOGLE_DRIVE_CLIENTS_FOLDER_ID not set");
-  const token = await getGoogleAccessToken();
-  const folderId = await findOrCreateClientFolder(folderNames, parentId, token);
-  // Markdown import keeps headings, bold and tables; plain text is the fallback.
-  let data = await uploadDoc(docName, markdown, folderId, token, "text/markdown");
-  if (!data.id) {
-    console.warn("[Drive] Markdown import failed, retrying as plain text:", JSON.stringify(data));
-    data = await uploadDoc(docName, markdown, folderId, token, "text/plain");
-  }
-  if (!data.id) throw new Error(`Drive upload failed: ${JSON.stringify(data)}`);
-  return data.webViewLink ?? `https://docs.google.com/document/d/${data.id}/edit`;
+async function slackPost(channel: string, text: string, threadTs: string | null = null): Promise<void> {
+  const data = await slack("chat.postMessage", { channel, text, mrkdwn: true, ...(threadTs ? { thread_ts: threadTs } : {}) });
+  if (!data.ok) console.error(`[Slack] chat.postMessage error: ${data.error}`);
 }
 
-// ─── Slack ─────────────────────────────────────────────────────────────────────
-async function slackPost(text: string, threadTs: string | null): Promise<void> {
-  const token = Deno.env.get("SLACK_BOT_TOKEN") ?? "";
-  const channel = Deno.env.get("SLACK_FULFILLMENT_CHANNEL_ID") ?? "";
-  if (!token || !channel) return;
-  const resp = await fetch(`${SLACK_API}/chat.postMessage`, {
-    method: "POST",
-    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
-    body: JSON.stringify({ channel, text, mrkdwn: true, ...(threadTs ? { thread_ts: threadTs } : {}) }),
-  });
-  const data = await resp.json();
-  if (!data.ok) console.error(`[Slack] chat.postMessage error: ${data.error}`);
+// A channel's built-in canvas already holds the brand canvas, so the scripts get their own
+// canvas created in (or shared to) the channel.
+async function createChannelCanvas(channelId: string, title: string, markdown: string): Promise<string> {
+  const document_content = { type: "markdown", markdown };
+  let data = await slack("canvases.create", { title, document_content, channel_id: channelId });
+  if (!data.ok) {
+    console.warn(`[Slack] canvases.create with channel_id failed (${data.error}); creating standalone and sharing`);
+    data = await slack("canvases.create", { title, document_content });
+    if (!data.ok) throw new Error(`canvases.create failed: ${data.error}`);
+    const shared = await slack("canvases.access.set", { canvas_id: data.canvas_id, access_level: "write", channel_ids: [channelId] });
+    if (!shared.ok) throw new Error(`canvases.access.set failed: ${shared.error}`);
+  }
+  return data.canvas_id as string;
+}
+
+async function canvasUrl(canvasId: string): Promise<string> {
+  const info = await slack("files.info", { file: canvasId });
+  if (info.ok && info.file?.permalink) return info.file.permalink as string;
+  const auth = await slack("auth.test", {});
+  return `${auth.url}docs/${auth.team_id}/${canvasId}`;
 }
 
 // ─── Main ──────────────────────────────────────────────────────────────────────
 async function process(submission: any, supabase: any): Promise<void> {
+  const teamChannel = Deno.env.get("SLACK_FULFILLMENT_CHANNEL_ID") ?? "";
+  const threadTs = async () =>
+    (await supabase.from("yapping_submissions").select("slack_thread_ts").eq("id", submission.id).maybeSingle()).data?.slack_thread_ts ?? null;
   try {
     let client: any = null;
     if (submission.client_id) {
       const { data } = await supabase
         .from("clients")
-        .select("name, brand_name, industry, handle, bio, content_guidelines")
+        .select("name, brand_name, industry, handle, bio, content_guidelines, slack_channel_id")
         .eq("id", submission.client_id)
         .maybeSingle();
       client = data;
     }
     const clientName = client?.name || submission.client_name;
+    const title = `${clientName} - Yapping Scripts`;
     const markdown = await generateScripts(clientName, client, submission.answers ?? []);
-    const folderNames = [...new Set([client?.name, client?.brand_name, submission.client_name].filter(Boolean))] as string[];
-    const docUrl = await saveScriptsDoc(`${clientName} - Yapping Scripts`, folderNames, markdown);
 
+    const clientChannel: string | null = client?.slack_channel_id ?? null;
+    const canvasId = await createChannelCanvas(clientChannel ?? teamChannel, title, markdown);
+    const url = await canvasUrl(canvasId);
+
+    if (clientChannel) {
+      await slackPost(
+        clientChannel,
+        `📝 *Your Yapping scripts are ready!*\nWe turned your questionnaire answers into your first talking-to-camera videos. Open <${url}|${title}> to read them, and reply here with anything you'd like to change.`,
+      );
+    }
     await supabase.from("yapping_submissions")
-      .update({ scripts_status: "done", scripts_doc_url: docUrl, scripts_error: null })
+      .update({ scripts_status: "done", scripts_doc_url: url, scripts_error: null })
       .eq("id", submission.id);
-    const { data: latest } = await supabase.from("yapping_submissions").select("slack_thread_ts").eq("id", submission.id).maybeSingle();
-    await slackPost(`📝 Yapping scripts ready for *${clientName}*: <${docUrl}|${clientName} - Yapping Scripts>`, latest?.slack_thread_ts ?? null);
-    console.log(`[yapping-scripts] Done for ${clientName}: ${docUrl}`);
+    await slackPost(
+      teamChannel,
+      clientChannel
+        ? `📝 Yapping scripts shared in <#${clientChannel}>: <${url}|${title}>`
+        : `📝 Yapping scripts ready: <${url}|${title}> (no client Slack channel on file, so they're here)`,
+      await threadTs(),
+    );
+    console.log(`[yapping-scripts] Done for ${clientName}: ${url}`);
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     console.error("[yapping-scripts] Failed:", msg);
     await supabase.from("yapping_submissions").update({ scripts_status: "failed", scripts_error: msg.slice(0, 1000) }).eq("id", submission.id);
-    const { data: latest } = await supabase.from("yapping_submissions").select("slack_thread_ts").eq("id", submission.id).maybeSingle();
-    await slackPost(`⚠️ Couldn't create the Yapping scripts for *${submission.client_name}* automatically. Error: ${msg.slice(0, 300)}`, latest?.slack_thread_ts ?? null);
+    await slackPost(teamChannel, `⚠️ Couldn't create the Yapping scripts for *${submission.client_name}* automatically. Error: ${msg.slice(0, 300)}`, await threadTs());
   }
 }
 
