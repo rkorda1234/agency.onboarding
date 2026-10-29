@@ -707,22 +707,31 @@ async function createCanvaDesign(clientName: string, supabase: any): Promise<str
 }
 
 // ─── Google Drive helpers ─────────────────────────────────────────────────────
-async function saveDriveFile(
-  name: string,
-  content: string,
-  mimeType: "application/vnd.google-apps.document",
-  folderId: string,
-  token: string
-): Promise<string> {
+// Saves a Markdown (.md) file in the client's folder, overwriting a file with the same name.
+async function saveDriveFile(name: string, content: string, folderId: string, token: string): Promise<string> {
+  const q = `'${folderId}' in parents and name = '${name}' and trashed = false`;
+  const found = await (await fetch(`https://www.googleapis.com/drive/v3/files?${new URLSearchParams({
+    q, fields: "files(id)", supportsAllDrives: "true", includeItemsFromAllDrives: "true",
+  })}`, { headers: { Authorization: `Bearer ${token}` } })).json();
+  const existing = found.files?.[0]?.id;
+  if (existing) {
+    const resp = await fetch(`https://www.googleapis.com/upload/drive/v3/files/${existing}?uploadType=media&supportsAllDrives=true`, {
+      method: "PATCH",
+      headers: { Authorization: `Bearer ${token}`, "Content-Type": "text/markdown; charset=UTF-8" },
+      body: content,
+    });
+    if (!resp.ok) throw new Error(`Drive file update failed for "${name}": ${resp.status}`);
+    return existing as string;
+  }
   const boundary = "mv_multipart_boundary";
-  const metadata = JSON.stringify({ name, mimeType, parents: [folderId] });
+  const metadata = JSON.stringify({ name, mimeType: "text/markdown", parents: [folderId] });
   const multipartBody = [
     `--${boundary}`,
     "Content-Type: application/json; charset=UTF-8",
     "",
     metadata,
     `--${boundary}`,
-    "Content-Type: text/plain; charset=UTF-8",
+    "Content-Type: text/markdown; charset=UTF-8",
     "",
     content,
     `--${boundary}--`,
@@ -825,8 +834,9 @@ async function createDriveFolder(name: string, parentId: string, token: string):
 async function saveBrandCanvasToDrive(
   clientName: string,
   brandCanvas: string,
-  brief: any
-): Promise<{ folderUrl: string } | null> {
+  brief: any,
+  existingFolderId: string | null
+): Promise<{ folderUrl: string; folderId: string } | null> {
   const clientsFolderId = Deno.env.get("GOOGLE_DRIVE_CLIENTS_FOLDER_ID");
   if (!clientsFolderId) {
     console.warn("[Drive] GOOGLE_DRIVE_CLIENTS_FOLDER_ID not set — skipping");
@@ -834,11 +844,12 @@ async function saveBrandCanvasToDrive(
   }
 
   const token = await getGoogleAccessToken();
-  const folderId = await createDriveFolder(clientName, clientsFolderId, token);
-  console.log(`[Drive] Created folder "${clientName}" → ${folderId}`);
+  // Reuse the client's folder (clients.drive_folder_id) so a second brief doesn't create a duplicate.
+  const folderId = existingFolderId ?? await createDriveFolder(clientName, clientsFolderId, token);
+  console.log(`[Drive] ${existingFolderId ? "Using" : "Created"} folder "${clientName}" → ${folderId}`);
 
-  // 1. Brand Canvas — AI-generated brand strategy
-  await saveDriveFile(`Brand Canvas — ${clientName}`, brandCanvas, "application/vnd.google-apps.document", folderId, token);
+  // 1. Brand guide — the brand canvas (same content as the Slack canvas)
+  await saveDriveFile("brand-guide.md", `# Brand Canvas — ${clientName}\n\n${brandCanvas}\n`, folderId, token);
 
   // 2. Brief — raw form submission as markdown
   const briefContent = [
@@ -871,7 +882,7 @@ async function saveBrandCanvasToDrive(
     `**Content resources:** ${arr(brief.content_resources || brief.contentResources)}`,
     `**Personal hook:** ${brief.personal_hook || brief.personalHook || "—"}`,
   ].join("\n");
-  await saveDriveFile(`Brief — ${clientName}`, briefContent, "application/vnd.google-apps.document", folderId, token);
+  await saveDriveFile("brief.md", briefContent, folderId, token);
 
   // 3. Metrics — KPI tracking placeholder
   const metricsContent = [
@@ -885,7 +896,7 @@ async function saveBrandCanvasToDrive(
     "",
     "_Add monthly performance notes here._",
   ].join("\n");
-  await saveDriveFile(`Metrics — ${clientName}`, metricsContent, "application/vnd.google-apps.document", folderId, token);
+  await saveDriveFile("metrics.md", metricsContent, folderId, token);
 
   // 4. Content Log — empty content tracking table
   const contentLogContent = [
@@ -895,11 +906,11 @@ async function saveBrandCanvasToDrive(
     "|------|----------|--------|--------|-------------------|--------|------|-------|",
     "| | | | | | | | |",
   ].join("\n");
-  await saveDriveFile(`Content Log — ${clientName}`, contentLogContent, "application/vnd.google-apps.document", folderId, token);
+  await saveDriveFile("content-log.md", contentLogContent, folderId, token);
 
   const folderUrl = `https://drive.google.com/drive/folders/${folderId}`;
   console.log(`[Drive] 4 files saved → folder: ${folderUrl}`);
-  return { folderUrl };
+  return { folderUrl, folderId };
 }
 
 // ─── Brand canvas parser ────────────────────────────────────────────────────────────────────────
@@ -1049,8 +1060,16 @@ async function processOnboarding(brief: any, supabase: any): Promise<void> {
   let driveFolderUrl: string | null = null;
   if (brandCanvas) {
     try {
-      const driveResult = await saveBrandCanvasToDrive(clientName, brandCanvas, brief);
+      let existingFolderId: string | null = null;
+      if (clientId) {
+        const { data } = await supabase.from("clients").select("drive_folder_id").eq("id", clientId).maybeSingle();
+        existingFolderId = data?.drive_folder_id ?? null;
+      }
+      const driveResult = await saveBrandCanvasToDrive(clientName, brandCanvas, brief, existingFolderId);
       driveFolderUrl = driveResult?.folderUrl ?? null;
+      if (driveResult && clientId && !existingFolderId) {
+        await supabase.from("clients").update({ drive_folder_id: driveResult.folderId }).eq("id", clientId);
+      }
     } catch (err) {
       console.error("[Drive] Error:", err);
     }
