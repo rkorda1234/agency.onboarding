@@ -9,6 +9,8 @@
  *   3. Slack #mv-main (C03B8R3NZJ4): "<client> cancelled" + what was updated + reminder to remove them from the
  *      clients' WhatsApp group.
  *
+ * Plans in app_settings.zoho_cancel_ignore_plans (JSON array of plan codes: add-ons, one-time projects, the Slack seat)
+ * never count as a client leaving (owner 2026-11-03) → 200 { ignored }.
  * Only reacts to cancellations (event_type subscription_cancelled, or a subscription whose status is cancelled);
  * anything else gets 200 { ignored }. Kept separate from zoho-subscription-onboarding, which onboards on ANY event.
  * Auth: ?key= must equal app_settings.zoho_cancel_key (verify_jwt off — Zoho can't send a Supabase JWT).
@@ -39,8 +41,9 @@ function extract(body: Record<string, any>) {
     eventType: String(body.event_type ?? body.data?.event_type ?? "").toLowerCase(),
     status: String(sub.status ?? "").toLowerCase(),
     name: (customer.display_name || sub.customer_name || body.customer_name || "").trim() || null,
-    email: (customer.email || sub.customer_email || body.customer_email || "").trim().toLowerCase() || null,
+    email: (customer.email || sub.customer_email || sub.email || body.customer_email || "").trim().toLowerCase() || null,
     plan: (sub.plan?.name || sub.plan_name || sub.plan?.plan_code || sub.plan_code || "").trim() || null,
+    planCode: String(sub.plan?.plan_code || sub.plan_code || "").trim().toLowerCase(),
     cancelledOn: sub.cancelled_date || sub.cancelled_at || sub.expires_at || null,
     reason: (sub.cancel_reason || sub.cancellation_reason || "").trim() || null,
   };
@@ -139,6 +142,10 @@ Deno.serve(async (req) => {
   const c = extract(body);
   const isCancel = c.eventType === "subscription_cancelled" || (!c.eventType.includes("scheduled") && c.status === "cancelled");
   if (!isCancel) return json({ ok: true, ignored: `not a cancellation (event_type="${c.eventType}", status="${c.status}")` });
+  const { data: ign } = await db().from("app_settings").select("value").eq("key", "zoho_cancel_ignore_plans").maybeSingle();
+  let ignorePlans: string[] = [];
+  try { ignorePlans = JSON.parse(ign?.value || "[]").map((x: string) => String(x).toLowerCase()); } catch { /* none */ }
+  if (c.planCode && ignorePlans.includes(c.planCode)) return json({ ok: true, ignored: `plan "${c.planCode}" is an add-on / one-time plan, not a client leaving` });
   if (!c.email && !c.name) return json({ error: "No customer email or name in the payload", keys: Object.keys(body) }, 400);
 
   const result: Record<string, any> = { ok: true, dry, client: { name: c.name, email: c.email, plan: c.plan } };
