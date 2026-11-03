@@ -953,9 +953,10 @@ function parseBrandCanvas(canvas: string): {
 
 // ─── Next step message ────────────────────────────────────────────────────────
 function buildNextStepMessage(clientName: string): string {
-  return `*👋 Welcome, ${clientName}!*
+  // No second "Welcome" (owner 2026-11-03): the first channel message already welcomes the client.
+  return `*📅 Next step: your onboarding call*
 
-Your next step is to schedule your Onboarding Zoom Meeting with the team so we can connect and configure your accounts:
+Please schedule your Onboarding Zoom Meeting with the team so we can connect and configure your accounts:
 
 📅 *<https://api.leadconnectorhq.com/widget/bookings/the-marketingverse/onboarding-meeting|Book your onboarding call here>*`;
 }
