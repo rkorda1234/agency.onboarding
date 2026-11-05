@@ -426,18 +426,22 @@
   input[type=tel]:focus, input[type=date]:focus { border-color: var(--orange); box-shadow: 0 0 0 3px var(--orange-dim); }
   .err { color: #ff6b6b; font-size: 0.8rem; margin-top: 1rem; display: none; }
   .hp { position: absolute; left: -9999px; }
+  .lang-switch { display: inline-flex; align-self: flex-start; width: max-content; gap: 4px; padding: 3px; border: 1px solid var(--border); border-radius: 100px; margin-bottom: 1.75rem; }
+  .lang-switch button { background: transparent; border: 0; color: var(--muted); font-family: var(--sans); font-size: 0.78rem; padding: 6px 14px; border-radius: 100px; cursor: pointer; }
+  .lang-switch button.on { background: var(--orange); color: #fff; font-weight: 600; }
 </style>
 </head>
 <body>
 <div class="page">
   <aside class="sidebar">
     <div class="sidebar-logo"><span class="logo-dot"></span> Marketingverse</div>
-    <div class="sidebar-headline">Welcome to the team.</div>
-    <div class="sidebar-sub">A few details so we can set you up: your calendar login, Slack and your client channels.</div>
+    <div class="lang-switch" role="group" aria-label="Language"><button type="button" data-lang="en">English</button><button type="button" data-lang="es">Español</button></div>
+    <div class="sidebar-headline" data-i18n="headline">Welcome to the team.</div>
+    <div class="sidebar-sub" data-i18n="sub">A few details so we can set you up: your calendar login, Slack and your client channels.</div>
     <ul class="progress-list">
-      <li class="active" data-step="0"><span class="step-dot">1</span> About you</li>
-      <li data-step="1"><span class="step-dot">2</span> Your work</li>
-      <li data-step="2"><span class="step-dot">3</span> Review</li>
+      <li class="active" data-step="0"><span class="step-dot">1</span> <span data-i18n="s1">About you</span></li>
+      <li data-step="1"><span class="step-dot">2</span> <span data-i18n="s2">Your work</span></li>
+      <li data-step="2"><span class="step-dot">3</span> <span data-i18n="s3">Review</span></li>
     </ul>
     <div class="sidebar-footer">© Marketingverse</div>
   </aside>
@@ -447,66 +451,108 @@
       <input class="hp" type="text" name="website" tabindex="-1" autocomplete="off" />
 
       <section class="section active" data-step="0">
-        <div class="section-eyebrow">Step 1 of 3</div>
-        <div class="section-title">About you</div>
-        <div class="section-desc">Use the email you want for Slack and the content calendar.</div>
-        <div class="field"><label>Full name</label><input type="text" name="full_name" required placeholder="First and last name" /></div>
+        <div class="section-eyebrow" data-i18n="step1">Step 1 of 3</div>
+        <div class="section-title" data-i18n="s1">About you</div>
+        <div class="section-desc" data-i18n="d1">Use the email you want for Slack and the content calendar.</div>
+        <div class="field"><label data-i18n="name">Full name</label><input type="text" name="full_name" required data-i18n-ph="name_ph" placeholder="First and last name" /></div>
         <div class="two-col">
-          <div class="field"><label>Email</label><input type="email" name="email" required placeholder="you@email.com" /></div>
-          <div class="field"><label>Phone</label><input type="tel" name="phone" placeholder="+1 305 555 0100" /></div>
+          <div class="field"><label data-i18n="email">Email</label><input type="email" name="email" required placeholder="you@email.com" /></div>
+          <div class="field"><label data-i18n="phone">Phone</label><input type="tel" name="phone" placeholder="+1 305 555 0100" /></div>
         </div>
         <div class="two-col">
-          <div class="field"><label>Birthday</label><input type="date" name="birthday" /></div>
-          <div class="field"><label>City</label><input type="text" name="city" placeholder="Miami, Caracas, Bogotá…" /></div>
+          <div class="field"><label data-i18n="bday">Birthday</label><input type="date" name="birthday" /></div>
+          <div class="field"><label data-i18n="city">City</label><input type="text" name="city" placeholder="Miami, Caracas, Bogotá…" /></div>
         </div>
-        <div class="field"><label>Time zone</label><input type="text" name="timezone" placeholder="Filled in for you" /></div>
-        <div class="nav"><button type="button" class="btn-next" data-go="1">Next <span class="arrow">→</span></button></div>
+        <div class="field"><label data-i18n="tz">Time zone</label><input type="text" name="timezone" data-i18n-ph="tz_ph" placeholder="Filled in for you" /></div>
+        <div class="nav"><button type="button" class="btn-next" data-go="1"><span data-i18n="next">Next</span> <span class="arrow">→</span></button></div>
       </section>
 
       <section class="section" data-step="1">
-        <div class="section-eyebrow">Step 2 of 3</div>
-        <div class="section-title">Your work</div>
-        <div class="section-desc">Tell us how you'll work with us.</div>
-        <div class="field"><label>Your role</label>
+        <div class="section-eyebrow" data-i18n="step2">Step 2 of 3</div>
+        <div class="section-title" data-i18n="s2">Your work</div>
+        <div class="section-desc" data-i18n="d2">Tell us how you'll work with us.</div>
+        <div class="field"><label data-i18n="role">Your role</label>
           <div class="radio-group" data-name="role">
-            <span class="radio-pill" data-value="Content creator">Content creator</span>
-            <span class="radio-pill" data-value="Designer">Designer</span>
-            <span class="radio-pill" data-value="Both">Both</span>
+            <span class="radio-pill" data-value="Content creator" data-i18n="r_creator">Content creator</span>
+            <span class="radio-pill" data-value="Designer" data-i18n="r_designer">Designer</span>
+            <span class="radio-pill" data-value="Both" data-i18n="r_both">Both</span>
           </div>
         </div>
-        <div class="field"><label>Portfolio or Instagram <span class="optional">optional</span></label><input type="text" name="portfolio" placeholder="Link or @handle" /></div>
-        <div class="field"><label>Tools you use <span class="optional">optional</span></label>
+        <div class="field"><label><span data-i18n="portfolio">Portfolio or Instagram</span> <span class="optional" data-i18n="optional">optional</span></label><input type="text" name="portfolio" data-i18n-ph="portfolio_ph" placeholder="Link or @handle" /></div>
+        <div class="field"><label><span data-i18n="tools">Tools you use</span> <span class="optional" data-i18n="optional">optional</span></label>
           <div class="tags" data-name="tools">
             <span class="tag">Canva</span><span class="tag">CapCut</span><span class="tag">Premiere</span><span class="tag">After Effects</span>
             <span class="tag">Lightroom</span><span class="tag">Photoshop</span><span class="tag">Figma</span><span class="tag">ChatGPT / Claude</span>
           </div>
-          <input type="text" name="tools_other" placeholder="Others" style="margin-top:8px" />
+          <input type="text" name="tools_other" data-i18n-ph="others" placeholder="Others" style="margin-top:8px" />
         </div>
-        <div class="field"><label>Availability</label><textarea name="availability" placeholder="Days and hours you can work, e.g. Mon–Fri 9 AM–5 PM"></textarea></div>
-        <div class="field"><label>Anything else we should know? <span class="optional">optional</span></label><textarea name="notes"></textarea></div>
-        <div class="nav"><button type="button" class="btn-back" data-go="0">Back</button><button type="button" class="btn-next" data-go="2">Review <span class="arrow">→</span></button></div>
+        <div class="field"><label data-i18n="avail">Availability</label><textarea name="availability" data-i18n-ph="avail_ph" placeholder="Days and hours you can work, e.g. Mon–Fri 9 AM–5 PM"></textarea></div>
+        <div class="field"><label><span data-i18n="notes">Anything else we should know?</span> <span class="optional" data-i18n="optional">optional</span></label><textarea name="notes"></textarea></div>
+        <div class="nav"><button type="button" class="btn-back" data-go="0" data-i18n="back">Back</button><button type="button" class="btn-next" data-go="2"><span data-i18n="s3">Review</span> <span class="arrow">→</span></button></div>
       </section>
 
       <section class="section" data-step="2">
-        <div class="section-eyebrow">Step 3 of 3</div>
-        <div class="section-title">Review</div>
-        <div class="section-desc">Check your details, then send.</div>
+        <div class="section-eyebrow" data-i18n="step3">Step 3 of 3</div>
+        <div class="section-title" data-i18n="s3">Review</div>
+        <div class="section-desc" data-i18n="d3">Check your details, then send.</div>
         <div class="review-grid" id="review"></div>
         <div class="err" id="err"></div>
-        <div class="nav"><button type="button" class="btn-back" data-go="1">Back</button><button type="button" class="btn-next" id="send">Send <span class="arrow">→</span></button></div>
+        <div class="nav"><button type="button" class="btn-back" data-go="1" data-i18n="back">Back</button><button type="button" class="btn-next" id="send"><span data-i18n="send">Send</span> <span class="arrow">→</span></button></div>
       </section>
     </form>
 
     <div class="success-screen" id="done">
       <div class="success-icon">🎉</div>
-      <div class="success-title">You're all set!</div>
-      <div class="success-sub">We got your details. You'll get an email to sign in to the content calendar and a Slack invite soon. Once you join Slack, you'll be added to your channels automatically.</div>
+      <div class="success-title" data-i18n="done_t">You're all set!</div>
+      <div class="success-sub" data-i18n="done_s">We got your details. You'll get an email to sign in to the content calendar and a Slack invite soon. Once you join Slack, you'll be added to your channels automatically.</div>
     </div>
   </main>
 </div>
 
 <script>
   const API = 'https://calendar.the-marketingverse.com/api/team/apply';
+  const T = {
+    en: {
+      headline: 'Welcome to the team.', sub: 'A few details so we can set you up: your calendar login, Slack and your client channels.',
+      s1: 'About you', s2: 'Your work', s3: 'Review', step1: 'Step 1 of 3', step2: 'Step 2 of 3', step3: 'Step 3 of 3',
+      d1: 'Use the email you want for Slack and the content calendar.', d2: "Tell us how you'll work with us.", d3: 'Check your details, then send.',
+      name: 'Full name', name_ph: 'First and last name', email: 'Email', phone: 'Phone', bday: 'Birthday', city: 'City', tz: 'Time zone', tz_ph: 'Filled in for you',
+      next: 'Next', back: 'Back', send: 'Send', role: 'Your role', r_creator: 'Content creator', r_designer: 'Designer', r_both: 'Both',
+      portfolio: 'Portfolio or Instagram', portfolio_ph: 'Link or @handle', optional: 'optional', tools: 'Tools you use', others: 'Others',
+      avail: 'Availability', avail_ph: 'Days and hours you can work, e.g. Mon–Fri 9 AM–5 PM', notes: 'Anything else we should know?',
+      done_t: "You're all set!", done_s: "We got your details. You'll get an email to sign in to the content calendar and a Slack invite soon. Once you join Slack, you'll be added to your channels automatically.",
+      need_name: 'Please add your full name and a valid email.', need_role: 'Please pick your role.', err: 'Something went wrong. Please try again.',
+      k: ['Name', 'Email', 'Phone', 'Birthday', 'City', 'Time zone', 'Role', 'Portfolio', 'Tools', 'Availability', 'Notes'],
+    },
+    es: {
+      headline: 'Bienvenido al equipo.', sub: 'Unos datos para dejarte listo: tu acceso al calendario, Slack y los canales de tus clientes.',
+      s1: 'Sobre ti', s2: 'Tu trabajo', s3: 'Revisión', step1: 'Paso 1 de 3', step2: 'Paso 2 de 3', step3: 'Paso 3 de 3',
+      d1: 'Usa el email que quieres para Slack y el calendario de contenido.', d2: 'Cuéntanos cómo vas a trabajar con nosotros.', d3: 'Revisa tus datos y envía.',
+      name: 'Nombre completo', name_ph: 'Nombre y apellido', email: 'Email', phone: 'Teléfono', bday: 'Cumpleaños', city: 'Ciudad', tz: 'Zona horaria', tz_ph: 'Se completa sola',
+      next: 'Siguiente', back: 'Atrás', send: 'Enviar', role: 'Tu rol', r_creator: 'Creador de contenido', r_designer: 'Diseñador', r_both: 'Ambos',
+      portfolio: 'Portafolio o Instagram', portfolio_ph: 'Link o @usuario', optional: 'opcional', tools: 'Herramientas que usas', others: 'Otras',
+      avail: 'Disponibilidad', avail_ph: 'Días y horas en que puedes trabajar, ej. lun–vie 9 AM–5 PM', notes: '¿Algo más que debamos saber?',
+      done_t: '¡Listo!', done_s: 'Recibimos tus datos. Pronto te llegará un email para entrar al calendario de contenido y una invitación a Slack. Cuando entres a Slack, te agregaremos a tus canales automáticamente.',
+      need_name: 'Agrega tu nombre completo y un email válido.', need_role: 'Elige tu rol.', err: 'Algo salió mal. Inténtalo de nuevo.',
+      k: ['Nombre', 'Email', 'Teléfono', 'Cumpleaños', 'Ciudad', 'Zona horaria', 'Rol', 'Portafolio', 'Herramientas', 'Disponibilidad', 'Notas'],
+    },
+  };
+  let lang = 'en';
+  try { lang = new URLSearchParams(location.search).get('lang') || localStorage.getItem('mv_team_lang') || ((navigator.language || '').startsWith('es') ? 'es' : 'en'); } catch (e) {}
+  if (!T[lang]) lang = 'en';
+  const t = (k) => T[lang][k] ?? T.en[k];
+  function applyLang() {
+    document.documentElement.lang = lang;
+    document.querySelectorAll('[data-i18n]').forEach((el) => { el.textContent = t(el.dataset.i18n); });
+    document.querySelectorAll('[data-i18n-ph]').forEach((el) => { el.placeholder = t(el.dataset.i18nPh); });
+    document.querySelectorAll('.lang-switch button').forEach((b) => b.classList.toggle('on', b.dataset.lang === lang));
+    document.title = lang === 'es' ? 'Únete al equipo · Marketingverse' : 'Join the Team · Marketingverse';
+    if (document.querySelector('.section[data-step="2"].active')) renderReview();
+  }
+  document.querySelectorAll('.lang-switch button').forEach((b) => b.addEventListener('click', () => {
+    lang = b.dataset.lang; try { localStorage.setItem('mv_team_lang', lang); } catch (e) {}
+    applyLang();
+  }));
   const f = document.getElementById('f');
   try { f.timezone.value = Intl.DateTimeFormat().resolvedOptions().timeZone || ''; } catch (e) {}
   const picks = { role: '', tools: new Set() };
@@ -522,21 +568,24 @@
     full_name: f.full_name.value.trim(), email: f.email.value.trim(), phone: f.phone.value.trim(), birthday: f.birthday.value,
     city: f.city.value.trim(), timezone: f.timezone.value.trim(), role: picks.role, portfolio: f.portfolio.value.trim(),
     tools: [...picks.tools, f.tools_other.value.trim()].filter(Boolean).join(', '), availability: f.availability.value.trim(),
-    notes: f.notes.value.trim(), website: f.website.value,
+    notes: f.notes.value.trim(), website: f.website.value, language: lang,
   });
+  applyLang();
   const err = document.getElementById('err');
+  function renderReview() {
+    const d = data(), K = t('k');
+    const roleLabel = { 'Content creator': t('r_creator'), Designer: t('r_designer'), Both: t('r_both') }[d.role] || d.role;
+    const vals = [d.full_name, d.email, d.phone, d.birthday, d.city, d.timezone, roleLabel, d.portfolio, d.tools, d.availability, d.notes];
+    const esc = (s) => String(s || '—').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+    document.getElementById('review').innerHTML = vals.map((v, i) => `<div class="review-row"><div class="review-key">${K[i]}</div><div class="review-val">${esc(v)}</div></div>`).join('');
+  }
   function go(n) {
     const d = data();
-    if (n >= 1 && (!d.full_name || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(d.email))) { alert('Please add your full name and a valid email.'); return; }
-    if (n >= 2 && !d.role) { alert('Please pick your role.'); return; }
+    if (n >= 1 && (!d.full_name || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(d.email))) { alert(t('need_name')); return; }
+    if (n >= 2 && !d.role) { alert(t('need_role')); return; }
     document.querySelectorAll('.section').forEach((s) => s.classList.toggle('active', s.dataset.step == n));
     document.querySelectorAll('.progress-list li').forEach((l) => { l.classList.toggle('active', l.dataset.step == n); l.classList.toggle('done', l.dataset.step < n); });
-    if (n == 2) {
-      const rows = [['Name', d.full_name], ['Email', d.email], ['Phone', d.phone], ['Birthday', d.birthday], ['City', d.city], ['Time zone', d.timezone],
-        ['Role', d.role], ['Portfolio', d.portfolio], ['Tools', d.tools], ['Availability', d.availability], ['Notes', d.notes]];
-      const esc = (s) => String(s || '—').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
-      document.getElementById('review').innerHTML = rows.map(([k, v]) => `<div class="review-row"><div class="review-key">${k}</div><div class="review-val">${esc(v)}</div></div>`).join('');
-    }
+    if (n == 2) renderReview();
     window.scrollTo(0, 0);
   }
   document.querySelectorAll('[data-go]').forEach((b) => b.addEventListener('click', () => go(Number(b.dataset.go))));
@@ -545,7 +594,7 @@
     try {
       const r = await fetch(API, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data()) });
       const j = await r.json().catch(() => ({}));
-      if (!r.ok) throw new Error(j.error || 'Something went wrong. Please try again.');
+      if (!r.ok) throw new Error(lang === 'es' ? t('err') : (j.error || t('err')));
       f.style.display = 'none'; document.getElementById('done').style.display = 'block';
       document.querySelectorAll('.progress-list li').forEach((l) => { l.classList.remove('active'); l.classList.add('done'); });
     } catch (x) { err.textContent = x.message; err.style.display = 'block'; b.disabled = false; }
