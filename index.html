@@ -71,6 +71,9 @@
     display: inline-block;
   }
 
+  .lang-switch { display: inline-flex; align-self: flex-start; width: max-content; gap: 4px; padding: 3px; border: 1px solid var(--border); border-radius: 100px; margin-bottom: 1.75rem; }
+  .lang-switch button { background: transparent; border: 0; color: var(--muted); font-family: var(--sans); font-size: 0.78rem; padding: 6px 14px; border-radius: 100px; cursor: pointer; }
+  .lang-switch button.on { background: var(--orange); color: #fff; font-weight: 600; }
   .sidebar-headline {
     font-family: var(--tight);
     font-size: 1.75rem;
@@ -425,6 +428,7 @@
   <!-- Sidebar -->
   <aside class="sidebar">
     <div class="sidebar-logo">Marketingverse<span class="logo-dot"></span></div>
+    <div class="lang-switch" role="group" aria-label="Language"><button type="button" data-lang="en">English</button><button type="button" data-lang="es">Español</button></div>
     <div class="sidebar-headline">Let's build your brand presence.</div>
     <p class="sidebar-sub">This takes about 7 minutes. Your answers go directly into our content pipeline — no middlemen, no delays.</p>
     <ul class="progress-list" id="progressList">
@@ -820,7 +824,7 @@ let skipRE = false;
 function handleLogoUpload(input) {
   const file = input.files[0];
   if (!file) return;
-  if (file.size > 5 * 1024 * 1024) { alert('File too large. Max 5MB.'); input.value = ''; return; }
+  if (file.size > 5 * 1024 * 1024) { alert(t('File too large. Max 5MB.')); input.value = ''; return; }
   const reader = new FileReader();
   reader.onload = e => {
     logoDataUrl = e.target.result;
@@ -830,7 +834,7 @@ function handleLogoUpload(input) {
     const area = document.getElementById('logoUploadArea');
     area.classList.add('has-file');
     area.querySelector('.file-upload-text').textContent = file.name;
-    area.querySelector('.file-upload-sub').textContent = 'Click to change';
+    area.querySelector('.file-upload-sub').textContent = t('Click to change');
     area.querySelector('.file-upload-icon').textContent = '✓';
   };
   reader.readAsDataURL(file);
@@ -846,7 +850,7 @@ function selectRadio(groupId, el) {
 function selectRadioWithOther(groupId, el, wrapperId) {
   selectRadio(groupId, el);
   const wrap = document.getElementById(wrapperId);
-  if (wrap) wrap.style.display = el.textContent.trim() === 'Other' ? 'block' : 'none';
+  if (wrap) wrap.style.display = (el.dataset.v || el.textContent.trim()) === 'Other' ? 'block' : 'none';
 }
 
 function selectAesthetic(el, name) {
@@ -867,12 +871,12 @@ function toggleSwatch(el, hex) {
 }
 
 function getTagValues(containerId) {
-  return [...document.querySelectorAll(`#${containerId} .tag.selected`)].map(t => t.textContent.trim());
+  return [...document.querySelectorAll(`#${containerId} .tag.selected`)].map(t => t.dataset.v || t.textContent.trim());
 }
 
 function getRadioValue(groupId) {
   const sel = document.querySelector(`#${groupId} .radio-pill.selected`);
-  return sel ? sel.textContent.trim() : '';
+  return sel ? (sel.dataset.v || sel.textContent.trim()) : '';
 }
 
 function getTopObjection() {
@@ -889,10 +893,11 @@ function getTopObjection() {
 function val(id) { return (document.getElementById(id) || {}).value?.trim() || ''; }
 
 function isRealEstate() {
-  return /real\s*estate|realtor|broker|realty/i.test(val('industry'));
+  return /real\s*estate|realtor|broker|realty|bienes\s*ra[ií]ces|inmobiliari|corredor/i.test(val('industry'));
 }
 
 function updateForIndustry() {
+  industryChecked = true;
   skipRE = !isRealEstate();
 
   // Show/hide RE step in sidebar
@@ -901,19 +906,19 @@ function updateForIndustry() {
 
   // Update sidebar subtitle with estimated time
   const subEl = document.querySelector('.sidebar-sub');
-  if (subEl) subEl.textContent = skipRE
+  if (subEl) subEl.textContent = t(skipRE
     ? 'This takes about 5 minutes. Your answers go directly into our content pipeline — no middlemen, no delays.'
-    : 'This takes about 7 minutes. Your answers go directly into our content pipeline — no middlemen, no delays.';
+    : 'This takes about 7 minutes. Your answers go directly into our content pipeline — no middlemen, no delays.');
 
   // Update differentiator label + placeholder
   const diffLabel = document.getElementById('differentiatorLabel');
-  if (diffLabel) diffLabel.textContent = skipRE
+  if (diffLabel) diffLabel.textContent = t(skipRE
     ? 'What makes you different from competitors in your area?'
-    : 'What makes you different from other agents in your area?';
+    : 'What makes you different from other agents in your area?');
   const diffTextarea = document.getElementById('differentiator');
-  if (diffTextarea) diffTextarea.placeholder = skipRE
+  if (diffTextarea) diffTextarea.placeholder = t(skipRE
     ? '1–2 sentences about your unique angle, experience, or approach.'
-    : "1–2 sentences. E.g. I'm the only bilingual luxury agent in Brickell who also invests personally in pre-construction.";
+    : "1–2 sentences. E.g. I'm the only bilingual luxury agent in Brickell who also invests personally in pre-construction.");
 
   // Show/hide RE vs generic objection inputs
   const objRE = document.getElementById('objectionREWrap');
@@ -928,7 +933,7 @@ function updateForIndustry() {
     ['step-4', skipRE ? 4 : 5], ['step-5', skipRE ? 5 : 6], ['step-6', skipRE ? 6 : 7]
   ].forEach(([id, num]) => {
     const el = document.querySelector(`#${id} .section-eyebrow`);
-    if (el) el.textContent = `Step ${num} of ${total}`;
+    if (el) el.textContent = t(`Step ${num} of ${total}`);
   });
 }
 
@@ -945,31 +950,31 @@ function showStep(n) {
 
 function next(from) {
   if (from === 0) {
-    if (!val('clientName')) { alert('Please enter your brand / business name.'); return; }
-    if (!val('industry')) { alert('Please enter your industry.'); return; }
-    if (!val('handle')) { alert('Please enter your Instagram handle.'); return; }
-    if (!val('clientEmail')) { alert('Please enter the client email.'); return; }
+    if (!val('clientName')) { alert(t('Please enter your brand / business name.')); return; }
+    if (!val('industry')) { alert(t('Please enter your industry.')); return; }
+    if (!val('handle')) { alert(t('Please enter your Instagram handle.')); return; }
+    if (!val('clientEmail')) { alert(t('Please enter the client email.')); return; }
     updateForIndustry();
   }
   if (from === 1) {
-    if (!val('brandWords')) { alert('Please describe your brand in 3 words.'); return; }
-    if (!val('audience')) { alert('Please describe your target audience.'); return; }
-    if (getTagValues('toneTags').length === 0) { alert('Please select at least one tone of voice.'); return; }
-    if (!getRadioValue('langGroup')) { alert('Please select a content language.'); return; }
+    if (!val('brandWords')) { alert(t('Please describe your brand in 3 words.')); return; }
+    if (!val('audience')) { alert(t('Please describe your target audience.')); return; }
+    if (getTagValues('toneTags').length === 0) { alert(t('Please select at least one tone of voice.')); return; }
+    if (!getRadioValue('langGroup')) { alert(t('Please select a content language.')); return; }
   }
   if (from === 2) {
-    if (getTagValues('goalTags').length === 0) { alert('Please select at least one main goal.'); return; }
-    if (getTagValues('platformTags').length === 0) { alert('Please select at least one platform.'); return; }
+    if (getTagValues('goalTags').length === 0) { alert(t('Please select at least one main goal.')); return; }
+    if (getTagValues('platformTags').length === 0) { alert(t('Please select at least one platform.')); return; }
   }
   if (from === 3) {
-    if (!val('marketArea')) { alert('Please enter your market area.'); return; }
+    if (!val('marketArea')) { alert(t('Please enter your market area.')); return; }
   }
   if (from === 4) {
-    if (!selectedAesthetic && !val('aestheticCustom')) { alert('Please select a design aesthetic or describe your own.'); return; }
+    if (!selectedAesthetic && !val('aestheticCustom')) { alert(t('Please select a design aesthetic or describe your own.')); return; }
   }
   if (from === 5) {
-    if (!val('promote')) { alert('Please tell us what you want to promote on social media.'); return; }
-    if (!val('differentiator')) { alert('Please tell us what makes you different from ' + (skipRE ? 'competitors' : 'other agents') + '.'); return; }
+    if (!val('promote')) { alert(t('Please tell us what you want to promote on social media.')); return; }
+    if (!val('differentiator')) { alert(t(skipRE ? 'Please tell us what makes you different from competitors.' : 'Please tell us what makes you different from other agents.')); return; }
     buildReview();
   }
   currentStep = from + 1;
@@ -1001,7 +1006,7 @@ function buildReview() {
     if (c && c !== '#cccccc' && c !== '#000000' && !allColors.includes(c)) allColors.push(c);
   });
 
-  const allTags = [...document.querySelectorAll('.tag.selected')].map(t => t.textContent.trim());
+  const allTags = [...document.querySelectorAll('.tag.selected')].map(t => t.dataset.v || t.textContent.trim());
   const platforms = ['Instagram','Facebook','LinkedIn','TikTok','YouTube','Google My Business'].filter(p => allTags.includes(p));
   const goals = ['Brand awareness','Lead generation','Agent / talent recruiting','Listing promotion','Community building','Education & thought leadership'].filter(g => allTags.includes(g));
   const tones = ['Professional','Playful','Inspirational','Edgy','Minimal','Luxurious','Warm','Educational','Bold','Conversational'].filter(t => allTags.includes(t));
@@ -1047,6 +1052,7 @@ function buildReview() {
     camera_comfort:    getRadioValue('cameraGroup'),
     content_resources: getTagValues('resourcesTags'),
     personal_hook:     val('personalHook'),
+    form_language:     lang,
   };
 
   const slug = brief.clientName.toLowerCase().replace(/\s+/g,'-');
@@ -1063,31 +1069,31 @@ function buildReview() {
     ['Handle',           brief.handle     || '—'],
     ['Brand words',      brief.brandWords || '—'],
     ['Audience',         brief.targetAudience || '—'],
-    ['Tone',             (brief.toneOfVoice || []).join(', ') || '—'],
-    ['Language',         brief.contentLanguage || '—'],
-    ['Goals',            (brief.goals     || []).join(', ') || '—'],
-    ['Platforms',        (brief.platforms || []).join(', ') || '—'],
-    ['RE Specialty',     (brief.re_specialty || []).join(', ') || '—'],
-    ['Client focus',     (brief.client_focus || []).join(', ') || '—'],
-    ['Market tier',      brief.market_tier || '—'],
+    ['Tone',             tl(brief.toneOfVoice) || '—'],
+    ['Language',         t(brief.contentLanguage || '') || '—'],
+    ['Goals',            tl(brief.goals) || '—'],
+    ['Platforms',        tl(brief.platforms) || '—'],
+    ['RE Specialty',     tl(brief.re_specialty) || '—'],
+    ['Client focus',     tl(brief.client_focus) || '—'],
+    ['Market tier',      t(brief.market_tier || '') || '—'],
     ['Market area',      brief.market_area || '—'],
-    ['Experience',       brief.experience_level || '—'],
-    ['Team structure',   brief.team_structure || '—'],
-    ['Aesthetic',        (brief.designAesthetic || '') + (brief.aestheticCustom ? ' — ' + brief.aestheticCustom : '') || '—'],
+    ['Experience',       t(brief.experience_level || '') || '—'],
+    ['Team structure',   t(brief.team_structure || '') || '—'],
+    ['Aesthetic',        t(brief.designAesthetic || '') + (brief.aestheticCustom ? ' — ' + brief.aestheticCustom : '') || '—'],
     ['Colors',           colorsHtml],
-    ['Fonts',            (brief.fontStyle || []).join(', ') || '—'],
+    ['Fonts',            tl(brief.fontStyle) || '—'],
     ['Promoting',        brief.promote || '—'],
     ['Differentiator',   brief.differentiator || '—'],
-    ['Top objection',    brief.top_objection || '—'],
+    ['Top objection',    (skipRE ? brief.top_objection : t(brief.top_objection || '').replace(/^Other: /, t('Other') + ': ')) || '—'],
     ['Positioning goal', brief.positioning_goal || '—'],
-    ['Camera comfort',   brief.camera_comfort || '—'],
-    ['Resources',        (brief.content_resources || []).join(', ') || '—'],
+    ['Camera comfort',   t(brief.camera_comfort || '') || '—'],
+    ['Resources',        tl(brief.content_resources) || '—'],
     ['Personal hook',    brief.personal_hook || '—'],
     ['Compliance',       brief.dosAndDonts || '—'],
   ].filter(([, v]) => v && v !== '—');
 
   document.getElementById('reviewGrid').innerHTML = rows
-    .map(([k,v]) => `<div class="review-row"><div class="review-key">${k}</div><div class="review-val">${v}</div></div>`)
+    .map(([k,v]) => `<div class="review-row"><div class="review-key">${t(k)}</div><div class="review-val">${v}</div></div>`)
     .join('');
 }
 
@@ -1190,11 +1196,197 @@ STEPS TO EXECUTE IN ORDER:
   } catch(e) {
     clearInterval(logInterval);
     logIds.forEach(id => setLog(id, 'error'));
-    alert('Something went wrong. Please try again or contact us directly.');
+    alert(t('Something went wrong. Please try again or contact us directly.'));
     document.getElementById('launchBtn').disabled = false;
     showStep(6);
   }
 }
+
+// ── English / Español ─────────────────────────────────────────────────────────────
+// Only what the client SEES is translated. Selected options keep their English value (data-v),
+// so the brief, Slack canvas, calendar and GHL get the same data in either language.
+let lang = 'en';
+let industryChecked = false;
+const ES = {
+  'Client Onboarding — Marketingverse': 'Onboarding de clientes — Marketingverse',
+  "Let's build your brand presence.": 'Construyamos la presencia de tu marca.',
+  'This takes about 7 minutes. Your answers go directly into our content pipeline — no middlemen, no delays.': 'Toma unos 7 minutos. Tus respuestas van directo a nuestro equipo de contenido — sin intermediarios, sin demoras.',
+  'This takes about 5 minutes. Your answers go directly into our content pipeline — no middlemen, no delays.': 'Toma unos 5 minutos. Tus respuestas van directo a nuestro equipo de contenido — sin intermediarios, sin demoras.',
+  'Client info': 'Tus datos', 'Brand voice': 'Voz de marca', 'Goals & platforms': 'Objetivos y redes',
+  'Real estate profile': 'Perfil inmobiliario', 'Visual identity': 'Identidad visual', 'Content direction': 'Dirección de contenido',
+  'Review & launch': 'Revisar y enviar', 'Marketingverse · Secured': 'Marketingverse · Seguro',
+  'optional': 'opcional', 'select at least one': 'elige al menos una', 'select all that apply': 'elige todas las que apliquen',
+  'Continue': 'Continuar', '← Back': '← Atrás', '← Edit': '← Editar', 'Review brief': 'Revisar', 'Launch onboarding': 'Enviar',
+  // Step 1
+  'Tell us about you.': 'Cuéntanos sobre ti.',
+  'Basic information so we can set up your workspace and brand assets correctly.': 'Datos básicos para preparar tu espacio de trabajo y los archivos de tu marca.',
+  'Brand / business name': 'Nombre de la marca / negocio', 'Industry': 'Industria', 'Website': 'Sitio web',
+  'Instagram handle': 'Usuario de Instagram', 'Email': 'Email', 'Existing logo': 'Logo actual',
+  'Click to upload your logo': 'Haz clic para subir tu logo', 'PNG, JPG, or SVG — up to 5MB': 'PNG, JPG o SVG — hasta 5MB',
+  'Click to change': 'Haz clic para cambiarlo', 'Existing brand assets': 'Material de marca existente',
+  'e.g. Bloom Studio': 'ej. Bloom Studio', 'e.g. Real estate, Fashion…': 'ej. Bienes raíces, Moda…', '@yourhandle': '@tuusuario',
+  'client@theirbusiness.com': 'tu@negocio.com', 'Link to Drive, Dropbox, or describe what you have': 'Link de Drive o Dropbox, o describe lo que tienes',
+  // Step 2
+  'How does your brand speak?': '¿Cómo habla tu marca?',
+  'We use this to write copy that sounds unmistakably like you — not like a template.': 'Lo usamos para escribir textos que suenen a ti — no a una plantilla.',
+  'Describe your brand in 3–5 words': 'Describe tu marca en 3–5 palabras', 'e.g. Bold, Innovative, Warm': 'ej. Audaz, Innovadora, Cálida',
+  'Target audience': 'Público objetivo',
+  'Age, location, lifestyle, profession — the more specific, the better.': 'Edad, ubicación, estilo de vida, profesión — mientras más específico, mejor.',
+  'Tone of voice': 'Tono de voz', 'Professional': 'Profesional', 'Playful': 'Divertido', 'Inspirational': 'Inspirador',
+  'Edgy': 'Atrevido', 'Minimal': 'Sobrio', 'Luxurious': 'Lujoso', 'Warm': 'Cálido', 'Educational': 'Educativo',
+  'Bold': 'Audaz', 'Conversational': 'Conversacional',
+  'Content language': 'Idioma del contenido', 'English only': 'Solo inglés', 'Spanish only': 'Solo español',
+  'Bilingual (EN + ES)': 'Bilingüe (EN + ES)', 'Other': 'Otro',
+  // Step 3
+  'What do you want to achieve?': '¿Qué quieres lograr?',
+  'Your goals shape which content pillars we build and which platforms we prioritize.': 'Tus objetivos definen los pilares de contenido y las redes en las que nos enfocamos.',
+  'Main goals': 'Objetivos principales', 'Brand awareness': 'Reconocimiento de marca', 'Lead generation': 'Generar prospectos',
+  'Agent / talent recruiting': 'Reclutar agentes / talento', 'Listing promotion': 'Promocionar propiedades',
+  'Community building': 'Crear comunidad', 'Education & thought leadership': 'Educación y liderazgo de opinión', 'Platforms': 'Redes',
+  // Step 4
+  'Your real estate profile.': 'Tu perfil inmobiliario.',
+  'Help us understand your niche and market so every piece of content speaks to the right buyer or seller.': 'Ayúdanos a entender tu nicho y tu mercado para que cada contenido le hable al comprador o vendedor correcto.',
+  'Primary specialty': 'Especialidad principal', 'Residential Resale': 'Reventa residencial',
+  'New Construction / Pre-Construction': 'Obra nueva / Preconstrucción', 'Luxury / High-End': 'Lujo / Alta gama',
+  'Investment Properties': 'Propiedades de inversión', 'Commercial': 'Comercial', 'Vacation / Second Homes': 'Vacacional / Segunda vivienda',
+  'First-Time Buyers': 'Compradores primerizos', 'Relocation / Corporate Relocation': 'Reubicación / Reubicación corporativa',
+  'Who do you mainly work with?': '¿Con quién trabajas principalmente?', 'Buyers': 'Compradores', 'Sellers': 'Vendedores',
+  'Investors': 'Inversionistas', 'Renters': 'Inquilinos', 'All of the above': 'Todos los anteriores',
+  'Price range / market tier': 'Rango de precio / segmento', 'Entry-level': 'Económico', 'Mid-market': 'Medio',
+  'Luxury ($1M+)': 'Lujo ($1M+)', 'Ultra-luxury ($5M+)': 'Ultra lujo ($5M+)', 'Mixed / varies': 'Mixto / varía',
+  'Years of experience': 'Años de experiencia', 'Less than 2 years': 'Menos de 2 años', '2–5 years': '2–5 años',
+  '5–10 years': '5–10 años', '10+ years': '10+ años', 'Your market area': 'Tu zona de mercado',
+  'e.g. "Miami-Dade, Brickell & Coral Gables"': 'ej. "Miami-Dade, Brickell y Coral Gables"',
+  'Team or solo agent?': '¿Equipo o agente independiente?', 'Solo agent': 'Agente independiente',
+  'Small team (2–5)': 'Equipo pequeño (2–5)', 'Larger team / brokerage': 'Equipo grande / brokerage',
+  // Step 5
+  'What should your brand look like?': '¿Cómo debería verse tu marca?',
+  "Pick an aesthetic direction and your colors. We'll use this to generate your moodboard, brand guide, and first posts.": 'Elige un estilo y tus colores. Con esto preparamos tu moodboard, tu guía de marca y tus primeras publicaciones.',
+  'Design aesthetic': 'Estilo de diseño', 'pick the vibe that feels most like you': 'elige el estilo que más se parezca a ti',
+  'Editorial / Luxury': 'Editorial / Lujo', 'Bold & Energetic': 'Audaz y enérgico', 'Clean & Corporate': 'Limpio y corporativo',
+  'Warm & Organic': 'Cálido y orgánico', 'Dark & Premium': 'Oscuro y premium', 'Playful & Creative': 'Divertido y creativo',
+  'Minimalist': 'Minimalista', 'Retro / Vintage': 'Retro / Vintage',
+  'Or describe your own in a few words…': 'O describe el tuyo en pocas palabras…',
+  'Brand colors': 'Colores de marca', 'select presets or add your own hex colors': 'elige de la paleta o agrega tus propios colores',
+  '+ Add another color': '+ Agregar otro color', 'Font style preference': 'Estilo de letra preferido',
+  'Serif — elegant, editorial': 'Serif — elegante, editorial', 'Sans-serif — clean, modern': 'Sans-serif — limpia, moderna',
+  'Script — handwritten, personal': 'Script — manuscrita, personal', 'Bold display — loud, impactful': 'Display gruesa — llamativa, impactante',
+  'Mixed — varied, layered': 'Mixta — variada, combinada',
+  // Step 6
+  "What's your story?": '¿Cuál es tu historia?',
+  "The more you share here, the better the content. Don't hold back.": 'Mientras más compartas aquí, mejor será el contenido. No te guardes nada.',
+  'What do you want to promote on social media?': '¿Qué quieres promocionar en redes sociales?',
+  'Tell us about your products, services, unique selling points, what makes you different…': 'Cuéntanos sobre tus productos, servicios, lo que te hace único, lo que te diferencia…',
+  'What makes you different from other agents in your area?': '¿Qué te diferencia de otros agentes de tu zona?',
+  'What makes you different from competitors in your area?': '¿Qué te diferencia de la competencia en tu zona?',
+  "1–2 sentences. E.g. I'm the only bilingual luxury agent in Brickell who also invests personally in pre-construction.": '1–2 frases. Ej. Soy la única agente bilingüe de lujo en Brickell que también invierte personalmente en preconstrucción.',
+  '1–2 sentences about your unique angle, experience, or approach.': '1–2 frases sobre tu enfoque, experiencia o forma de trabajar.',
+  'Biggest objection you hear from clients': 'La objeción que más escuchas de tus clientes',
+  'Rates are too high right now': 'Las tasas están muy altas ahora', 'I can find deals myself online': 'Puedo encontrar ofertas yo mismo en internet',
+  "It's not the right time to buy/sell": 'No es buen momento para comprar/vender',
+  "I don't trust agents / bad past experience": 'No confío en los agentes / mala experiencia',
+  "I'm just looking, not ready yet": 'Solo estoy mirando, todavía no estoy listo',
+  'Describe the objection…': 'Describe la objeción…',
+  "What's the biggest hesitation you hear before clients sign up?": '¿Cuál es la duda más común antes de que un cliente contrate?',
+  'What do you want to be known for a year from now?': '¿Por qué quieres ser conocido dentro de un año?',
+  'e.g. The go-to agent for Latin American investors buying in South Florida': 'ej. El agente de referencia para inversionistas latinoamericanos que compran en el sur de Florida',
+  'On-camera comfort level': '¿Qué tan cómodo te sientes frente a la cámara?',
+  'Very comfortable, love being on camera': 'Muy cómodo, me encanta salir en cámara', 'Somewhat comfortable': 'Algo cómodo',
+  'Prefer voiceover / behind-the-scenes only': 'Prefiero voz en off / solo detrás de cámaras',
+  'Prefer not to be on camera at all': 'Prefiero no salir en cámara',
+  'What do you have access to?': '¿A qué tienes acceso?', 'Smartphone camera only': 'Solo la cámara del celular',
+  'Professional photos': 'Fotos profesionales', 'Professional video / videographer': 'Video profesional / videógrafo',
+  'Drone footage': 'Tomas con dron', 'Branded office / open house locations': 'Oficina con marca / lugares de open house',
+  'None of the above yet': 'Nada de esto todavía', 'Your personal hook': 'Tu toque personal',
+  'Any personal story, background, bilingual ability, community ties, or life detail worth weaving into content.': 'Cualquier historia personal, trayectoria, si eres bilingüe, lazos con tu comunidad o detalle de tu vida que valga la pena contar.',
+  "Doesn't need to be polished, just real.": 'No tiene que ser perfecto, solo real.',
+  'Competitors or brands you admire': 'Competidores o marcas que admiras',
+  'e.g. @compass, @apple — accounts whose look and feel inspires you': 'ej. @compass, @apple — cuentas cuyo estilo te inspira',
+  "Do's, don'ts, or compliance requirements": 'Qué sí, qué no, o reglas que debemos cumplir',
+  'e.g. NAR advertising rules, no stock photos, always use real people, Fair Housing disclosures required…': 'ej. reglas de publicidad de NAR, sin fotos de stock, siempre personas reales, avisos de Fair Housing…',
+  'Existing content or assets to reference': 'Contenido o material existente de referencia',
+  'Google Drive or Dropbox link to photos, past posts, brand materials…': 'Link de Google Drive o Dropbox con fotos, publicaciones anteriores, material de marca…',
+  // Step 7
+  'Looks good?': '¿Todo bien?',
+  "Review your brief below, then launch. We'll create your Slack workspace, brand guide, and first content assets automatically.": 'Revisa tus respuestas y envía. Prepararemos tu canal de Slack, tu guía de marca y tus primeros materiales.',
+  "What we'll create": 'Lo que vamos a preparar', 'Slack channel': 'Canal de Slack', 'Your dedicated brand workspace': 'Tu espacio de trabajo dedicado',
+  'Brand canvas': 'Brand canvas', 'Tone, pillars, palette, content strategy': 'Tono, pilares, paleta, estrategia de contenido',
+  'Canva design': 'Diseño en Canva', 'Shared to your Slack channel': 'Compartido en tu canal de Slack',
+  'Google Drive folder': 'Carpeta de Google Drive', 'Brand canvas, brief & metrics tracker': 'Brand canvas, brief y seguimiento de métricas',
+  'Onboarding meeting link': 'Link para la reunión de inicio', 'Schedule your kickoff call with the team': 'Agenda tu llamada de inicio con el equipo',
+  'Client': 'Cliente', 'Handle': 'Usuario', 'Brand words': 'Palabras de marca', 'Audience': 'Público', 'Tone': 'Tono',
+  'Language': 'Idioma', 'Goals': 'Objetivos', 'RE Specialty': 'Especialidad', 'Client focus': 'Tipo de cliente',
+  'Market tier': 'Segmento', 'Market area': 'Zona', 'Experience': 'Experiencia', 'Team structure': 'Equipo',
+  'Aesthetic': 'Estilo', 'Colors': 'Colores', 'Fonts': 'Letras', 'Promoting': 'Qué promocionas', 'Differentiator': 'Diferenciador',
+  'Top objection': 'Objeción principal', 'Positioning goal': 'Meta de posicionamiento', 'Camera comfort': 'Comodidad en cámara',
+  'Resources': 'Recursos', 'Personal hook': 'Toque personal', 'Compliance': 'Reglas',
+  // Launch + done
+  'Building your brand.': 'Preparando tu marca.',
+  "We're setting up your workspace and getting everything ready for you. This only takes a moment.": 'Estamos preparando tu espacio de trabajo y dejando todo listo para ti. Solo toma un momento.',
+  'Setting up your Slack channel…': 'Creando tu canal de Slack…', 'Writing brand canvas…': 'Escribiendo tu brand canvas…',
+  'Creating your Canva design…': 'Creando tu diseño en Canva…', 'Saving files to Google Drive…': 'Guardando archivos en Google Drive…',
+  'Posting brand canvas to Slack…': 'Publicando el brand canvas en Slack…', 'Sending your onboarding details…': 'Enviando tus datos de onboarding…',
+  "You're all set.": '¡Todo listo!',
+  "Your brand workspace is live. Check your Slack channel for design links and next steps. We'll be in touch within 24 hours.": 'Tu espacio de marca ya está activo. Revisa tu canal de Slack para ver los links de diseño y los próximos pasos. Te contactaremos en menos de 24 horas.',
+  // Alerts
+  'File too large. Max 5MB.': 'El archivo es muy grande. Máximo 5MB.',
+  'Please enter your brand / business name.': 'Escribe el nombre de tu marca / negocio.',
+  'Please enter your industry.': 'Escribe tu industria.', 'Please enter your Instagram handle.': 'Escribe tu usuario de Instagram.',
+  'Please enter the client email.': 'Escribe tu email.', 'Please describe your brand in 3 words.': 'Describe tu marca en 3 palabras.',
+  'Please describe your target audience.': 'Describe tu público objetivo.',
+  'Please select at least one tone of voice.': 'Elige al menos un tono de voz.',
+  'Please select a content language.': 'Elige el idioma del contenido.',
+  'Please select at least one main goal.': 'Elige al menos un objetivo principal.',
+  'Please select at least one platform.': 'Elige al menos una red.', 'Please enter your market area.': 'Escribe tu zona de mercado.',
+  'Please select a design aesthetic or describe your own.': 'Elige un estilo de diseño o describe el tuyo.',
+  'Please tell us what you want to promote on social media.': 'Cuéntanos qué quieres promocionar en redes sociales.',
+  'Please tell us what makes you different from competitors.': 'Cuéntanos qué te diferencia de la competencia.',
+  'Please tell us what makes you different from other agents.': 'Cuéntanos qué te diferencia de otros agentes.',
+  'Something went wrong. Please try again or contact us directly.': 'Algo salió mal. Inténtalo de nuevo o escríbenos directamente.',
+};
+const EN_OF = Object.fromEntries(Object.entries(ES).map(([en, es]) => [es.trim(), en]));
+function t(en) {
+  if (lang !== 'es' || !en) return en;
+  if (ES[en]) return ES[en].trim();
+  const m = /^Step (\d+) of (\d+)$/.exec(en);
+  return m ? `Paso ${m[1]} de ${m[2]}` : en;
+}
+function tl(list) { return (list || []).map(t).join(', '); }
+function enOf(text) {
+  if (ES[text] || /^Step \d+ of \d+$/.test(text)) return text;
+  if (EN_OF[text]) return EN_OF[text];
+  const m = /^Paso (\d+) de (\d+)$/.exec(text);
+  return m ? `Step ${m[1]} of ${m[2]}` : null;
+}
+function applyLang() {
+  document.documentElement.lang = lang;
+  const skip = 'script,style,.review-val,.file-name,.lang-switch';
+  const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT,
+    { acceptNode: (n) => (n.parentElement && n.parentElement.closest(skip)) ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT });
+  for (let n; (n = walker.nextNode());) {
+    const raw = n.nodeValue, txt = raw.trim();
+    if (!txt) continue;
+    const en = enOf(txt);
+    if (en != null) n.nodeValue = raw.replace(txt, t(en));
+  }
+  document.querySelectorAll('[placeholder]').forEach((el) => { const en = enOf(el.placeholder); if (en != null) el.placeholder = t(en); });
+  document.title = t('Client Onboarding — Marketingverse');
+  document.querySelectorAll('.lang-switch button').forEach((b) => b.classList.toggle('on', b.dataset.lang === lang));
+  if (industryChecked) updateForIndustry();
+  if (document.getElementById('step-6').classList.contains('active')) buildReview();
+}
+(function initLang() {
+  // Remember each option's English value before anything is translated
+  document.querySelectorAll('.tag, .radio-pill').forEach((el) => { if (!el.dataset.v) el.dataset.v = el.textContent.trim(); });
+  let saved = null; try { saved = localStorage.getItem('mv_brief_lang'); } catch (e) {}
+  const q = new URLSearchParams(location.search).get('lang');
+  lang = (q === 'es' || q === 'en') ? q : (saved || ((navigator.language || '').toLowerCase().startsWith('es') ? 'es' : 'en'));
+  document.querySelectorAll('.lang-switch button').forEach((b) => b.addEventListener('click', () => {
+    lang = b.dataset.lang; try { localStorage.setItem('mv_brief_lang', lang); } catch (e) {}
+    applyLang();
+  }));
+  applyLang();
+})();
 </script>
 </body>
 </html>
