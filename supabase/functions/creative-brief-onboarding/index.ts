@@ -414,7 +414,9 @@ async function createSlackCanvas(
       title: `Brand Canvas — ${clientName}`,
       document_content: {
         type: "markdown",
-        markdown: header + brandCanvas,
+        // Slack rejects a horizontal rule inside a quote ("Unsupported block type (ThematicBreak) within block quote"),
+        // which made Rodolfo Badilla's canvas fall back to messages (2026-11-21) — drop those lines.
+        markdown: (header + brandCanvas).split("\n").filter((l) => !/^\s*(>\s*)+([-*_]\s*){3,}$/.test(l)).join("\n"),
       },
     }),
   });
